@@ -1,7 +1,7 @@
 /*
  * server.cpp
  *
- *  Created on: 9 ΰοπ. 2016 γ.
+ *  Created on: 9 Γ Γ―Γ°. 2016 Γ£.
  *      Author: user
  */
 
@@ -44,7 +44,6 @@ void Server::AcceptLoop() {
   char html[1024];
 
   // Reading HTML-page from file
-  // Maybe it is not necessary if we use Qt.
   // CODE HERE
 
   ThreadPool threads_pool(kInitialThreadsCount);
@@ -59,9 +58,11 @@ void Server::AcceptLoop() {
       clients_.emplace_back(sock, clients_.end(), TClient::SHIPPING);
 
       // Here we are still not sure about a way to send HTML-page.
-      // Maybe it is not necessary if we use Qt.
+      // Something like that:
+      // clients_.back().PrepareMessage(html);
+      // clients_.back().SendMessages();
+      // As for wrapping-routine, I suppose it will be inside function Server::SendMessages()
       // CODE HERE
-      // clients_.back().Send(html, sizeof(html));
 
       Clients::iterator new_player_iter = --clients_.end();
       if (clients_.size() > 1) {
@@ -106,17 +107,17 @@ void Server::ParseData(char* buf,
   if (RecieveStep(buf, size, client_iterator))
     return;
 
-  client_iterator->Send("wrongcmd:", 10);
+  client_iterator->SendMessages();
 }
 
 void Server::ConnectTwoClients(Clients::iterator free_player_iter_first,
                                Clients::iterator free_player_iter_second) {
-  free_player_iter_first->Send("opponent:came", 14);
-  free_player_iter_second->Send("opponent:came", 14);
+  free_player_iter_first->PrepareMessage("opponent:came");
+  free_player_iter_second->PrepareMessage("opponent:came");
   free_player_iter_first->opponent_ = free_player_iter_second;
   free_player_iter_second->opponent_ = free_player_iter_first;
   if (free_player_iter_first->status_ == TClient::WAITING) {
-    free_player_iter_second->Send("opponent:shipped", 14);
+    free_player_iter_second->PrepareMessage("opponent:shipped");
   }
 }
 
@@ -128,11 +129,12 @@ void Server::Disconnect(Clients::iterator client_iterator) {
       clients_.erase(client_iterator->opponent_);
       clients_.erase(client_iterator);
     } else {
-      client_iterator->opponent_->Send("end:", 5);
+      client_iterator->opponent_->PrepareMessage("end:");
     }
   } else {
     clients_.erase(client_iterator);
   }
+
 }
 
 bool Server::RecieveShips(char* buf,
@@ -143,31 +145,29 @@ bool Server::RecieveShips(char* buf,
   }
 
   // Check if it is about receiving ships. if not return false
-  // CODE HERE
-
-  // extracting ships from  buf into client_iterator->ships; i. e. parsing buf here
+  // if yes, extracting ships from  buf into client_iterator->ships; i. e. parsing buf here
   // CODE HERE
 
   // Function TClient::CorrectShips() should be implemented
   if (client_iterator->CorrectShips()) {
-    client_iterator->Send("shipping:ok", 12);
+    client_iterator->PrepareMessage("shipping:ok");
     client_iterator->status_ = TClient::WAITING;
     if (client_iterator->opponent_ != clients_.end()) {
-      client_iterator->opponent_->Send("opponent:shipped", 14);
+      client_iterator->opponent_->PrepareMessage("opponent:shipped");
       // The following section is critical. We need mutexing.
       std::lock(client_iterator->mutex_for_starting_game,
           client_iterator->opponent_->mutex_for_starting_game);
       if (client_iterator->opponent_->status_ == TClient::WAITING) {
         client_iterator->status_ = TClient::WAITING_STEP;
         client_iterator->opponent_->status_ = TClient::MAKING_STEP;
-        client_iterator->opponent_->Send("go1", 4);
-        client_iterator->Send("go2", 4);
+        client_iterator->opponent_->PrepareMessage("go1");
+        client_iterator->PrepareMessage("go2");
       }
       client_iterator->mutex_for_starting_game.unlock();
       client_iterator->opponent_->mutex_for_starting_game.unlock();
     }
   } else {
-    client_iterator->Send("shipping:wrong", 15);
+    client_iterator->PrepareMessage("shipping:wrong");
   }
 
   return true;
@@ -225,8 +225,8 @@ bool Server::RecieveStep(char* buf,
     char message_for_opponent[12] = "field1:kill";
     ConcatenateAndSend(client_iterator, message_for_client,
         message_for_opponent, message_ending);
-    client_iterator->Send("won", 4);
-    client_iterator->opponent_->Send("lost", 5);
+    client_iterator->PrepareMessage("won");
+    client_iterator->opponent_->PrepareMessage("lost");
     break;
   }
   }
@@ -240,10 +240,11 @@ void Server::ConcatenateAndSend(Clients::iterator client_iterator,
                                 char* message_ending) {
   strcat(message_for_client, message_ending);
   strcat(message_for_opponent, message_ending);
-  client_iterator->Send(message_for_client, 18);
-  client_iterator->Send(message_for_opponent, 18);
+  client_iterator->PrepareMessage(message_for_client);
+  client_iterator->PrepareMessage(message_for_opponent);
 }
 
 bool Server::IsFree(Clients::iterator client_iterator) const {
   return client_iterator->opponent_ == clients_.end();
 }
+
