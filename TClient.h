@@ -1,7 +1,7 @@
 /*
  * TClient.h
  *
- *  Created on: 8 ΰοπ. 2016 γ.
+ *  Created on: 8 Γ Γ―Γ°. 2016 Γ£.
  *      Author: user
  */
 
@@ -18,6 +18,34 @@
 #include <vector>
 #include <mutex>
 #include <atomic>
+#include <queue>
+
+class ThreadSafeQueue {
+public:
+  ThreadSafeQueue() {
+  }
+
+  void enqueue(const std::string& message) {
+    std::unique_lock<std::mutex> queue_mutex_wrapper(queue_mutex);
+    messages.push(message);
+  }
+
+  std::string dequeue() {
+    std::unique_lock<std::mutex> queue_mutex_wrapper(queue_mutex);
+    std::string result = messages.front();
+    messages.pop();
+
+    return result;
+  }
+
+  bool empty() const {
+    return messages.empty();
+  }
+
+private:
+  std::mutex queue_mutex;
+  std::queue<std::string> messages;
+};
 
 class TClient {
 public:
@@ -28,12 +56,14 @@ public:
   };
 
   TClient(int client_socket,
-         std::list<TClient>::iterator opponent,
-         size_t status)
+          std::list<TClient>::iterator opponent,
+          size_t status)
       : client_socket_(client_socket), opponent_(opponent), status_(status) {
   }
 
-  void Send(const char* data, size_t sz);
+  void SendMessages();
+
+  void PrepareMessage(const std::string& message);
 
   // Just check if ships are correct.
   bool CorrectShips() const;
@@ -59,14 +89,13 @@ private:
   std::vector<std::vector<size_t>> ships_;
   // When it is equal to kCorrectHitsForWin the game should end.
   size_t correct_hits_counter_ = 0;
-  // We need send_mutex_ in function TClient::Send(). We don't want to mix messages
-  // from different threads.
-  std::mutex send_mutex_;
-  // We need send_mutex_ in function Server::ReceiveShips(), because data race is possible
+  // Messages to send (will be sent in function TClient::Send())
+  ThreadSafeQueue messages_queue;
+  // We need mutex_for_starting_game in function Server::ReceiveShips(), because data race is possible
   // in section with changing statuses from WAITING to WAITING_STEP and MAKING_STEP.
   // Only one thread should do this section.
-  std::mutex mutex_for_starting_game;
-  bool gone = false;
+  std::mutex mutex_for_starting_game;bool gone = false;
 };
 
 #endif /* TCLIENT_H_ */
+
