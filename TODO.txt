@@ -4,6 +4,7 @@
 
 1. Реализовать TClient::GetShooting(const size_t x_coord, const size_t y_coord)
 (Объявлена в файле TClient.h. Пустая реализация в TClient.cpp)
+Сурен.
 
 2. Реализовать TClient::CorrectShips() const
 (Объявлена в файле TClient.h. Пустая реализация в TClient.cpp)
