@@ -78,6 +78,30 @@ bool TClient::CorrectShips() const {
          && number_of_ships[2] == 2 && number_of_ships[3] == 1;
 }
 
+Coordinate TClient::FindBeginOfShip(const Coordinate ship_begin) {
+  // TRY TO GO DOWN
+  auto next_state = std::make_pair(ship_begin.first - 1, ship_begin.second);
+  if (next_state.first >= 0 
+      && grid[next_state.first][next_state.second]) {
+    while (next_state.first >= 0 
+           && grid[next_state.first][next_state.second]) {
+      next_state = std::make_pair(next_state.first - 1, next_state.second);
+    }
+    return std::make_pair(next_state.first + 1, next_state.second);
+  }
+  // TRY TO GO RIGHT
+  next_state = std::make_pair(ship_begin.first, ship_begin.second - 1);
+  if (next_state.second >= 0 
+      && grid[next_state.first][next_state.second]) {
+    while (next_state.second >= 0 
+           && grid[next_state.first][next_state.second]) {
+      next_state = std::make_pair(next_state.first, next_state.second - 1);
+    }
+    return std::make_pair(next_state.first, next_state.second + 1);
+  }
+
+  return ship_begin;
+}
 
 Coordinate TClient::FindEndOfShip(const Coordinate ship_begin) {
   // TRY TO GO DOWN
@@ -178,6 +202,12 @@ std::vector<Coordinate> TClient::SurroundingOfShip(const Coordinate ship_begin,
   surrounding_ships = result;
   
   return surrounding_ships;
+}
+
+std::vector<Coordinate> TClient::GetInclusiveShip(Coordinate coordinate) {
+  auto begin = FindBeginOfShip(coordinate);
+  auto end = FindEndOfShip(coordinate);
+  return GetShip(begin, end);
 }
 
 // End of CorrectShips realization
