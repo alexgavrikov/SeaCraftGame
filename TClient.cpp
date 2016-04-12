@@ -215,6 +215,8 @@ std::vector<Coordinate> TClient::GetInclusiveShip(Coordinate coordinate) {
 
 // The following function does a change in ships-vector (if necessary)
 // and returns MISS, HALF, KILL or WIN.
+
+// Returns HALF if you strike DEAD piece
 size_t TClient::GetShooting(const size_t x_coord, const size_t y_coord) {
   if (ships_[y_coord - 1][x_coord - 1] == TClient::WATER) {
     return TCLIENT::MISS;
@@ -226,10 +228,25 @@ size_t TClient::GetShooting(const size_t x_coord, const size_t y_coord) {
     }
     
     auto inclusive_ship = GetInclusiveShip(std::make_pair(y_coord - 1, x_coord - 1));
-    for ()
+    bool is_killed = true;
+    for (auto coordinate : inclusive_ship) {
+      if (ships_[coordinate.first][coordinate.second] == TClient::SHIP_PIECE_OK) {
+        is_killed = false;
+        break;
+      }
+    }
+    
+    if (is_killed) {
+      for (auto coordinate : inclusive_ship) {
+        ships_[coordinate.first][coordinate.second] = TClient::SHIP_PIECE_DEAD;
+      }
+      return TClient::KILL;
+    } else {
+      return TClient::HALF;
+    }
+  } else if (ships_[y_coord - 1][x_coord - 1] == TClient::SHIP_PIECE_DEAD) {
+    return TClient::HALF;
   }
-  
-
 }
 
 
