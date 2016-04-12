@@ -81,6 +81,21 @@ public:
   size_t GetShooting(const size_t x_coord, const size_t y_coord);
 
 private:
+ 
+  // CorrectShips functions
+  using Coordinate = std::pair<int, int>;
+  Coordinate FindEndOfShip(const Coordinate ship_begin);
+  Coordinate FindBeginOfShip(const Coordinate ship_begin);
+  std::vector<Coordinate> GetShip(const Coordinate ship_begin,
+                                  const Coordinate ship_end);
+  bool IsInGrid(const Coordinate coordinate);
+  bool IsInShip(const Coordinate coordinate, 
+                const Coordinate ship_begin, const Coordinate ship_end);
+  std::vector<Coordinate> SurroundingOfShip(const Coordinate ship_begin,
+                                            const Coordinate ship_end);
+  std::vector<Coordinate> GetInclusiveShip(Coordinate coordinate);
+  // End of CorrectShips functions  
+  
   static const size_t kCorrectHitsForWin = 18;
 
   int client_socket_;
@@ -95,20 +110,6 @@ private:
   // in section with changing statuses from WAITING to WAITING_STEP and MAKING_STEP.
   // Only one thread should do this section.
   std::mutex mutex_for_starting_game;bool gone = false;
-  
-  // CorrectShips functions
-  using Coordinate = std::pair<int, int>;
-  Coordinate FindEndOfShip(const Coordinate ship_begin);
-  Coordinate FindBeginOfShip(const Coordinate ship_begin);
-  std::vector<Coordinate> GetShip(const Coordinate ship_begin,
-                                  const Coordinate ship_end);
-  bool IsInGrid(const Coordinate coordinate);
-  bool IsInShip(const Coordinate coordinate, 
-                const Coordinate ship_begin, const Coordinate ship_end);
-  std::vector<Coordinate> SurroundingOfShip(const Coordinate ship_begin,
-                                            const Coordinate ship_end);
-  std::vector<Coordinate> GetInclusiveShip(Coordinate coordinate);
-  // End of CorrectShips functions
 };
 
 #endif /* TCLIENT_H_ */
