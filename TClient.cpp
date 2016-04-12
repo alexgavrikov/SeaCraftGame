@@ -82,9 +82,9 @@ Coordinate TClient::FindBeginOfShip(const Coordinate ship_begin) {
   // TRY TO GO DOWN
   auto next_state = std::make_pair(ship_begin.first - 1, ship_begin.second);
   if (next_state.first >= 0 
-      && grid[next_state.first][next_state.second]) {
+      && ships_[next_state.first][next_state.second] != TClient::WATER) {
     while (next_state.first >= 0 
-           && grid[next_state.first][next_state.second]) {
+           && ships_[next_state.first][next_state.second] != TClient::WATER) {
       next_state = std::make_pair(next_state.first - 1, next_state.second);
     }
     return std::make_pair(next_state.first + 1, next_state.second);
@@ -92,9 +92,9 @@ Coordinate TClient::FindBeginOfShip(const Coordinate ship_begin) {
   // TRY TO GO RIGHT
   next_state = std::make_pair(ship_begin.first, ship_begin.second - 1);
   if (next_state.second >= 0 
-      && grid[next_state.first][next_state.second]) {
+      && ships_[next_state.first][next_state.second] != TClient::WATER) {
     while (next_state.second >= 0 
-           && grid[next_state.first][next_state.second]) {
+           && ships_[next_state.first][next_state.second] != TClient::WATER) {
       next_state = std::make_pair(next_state.first, next_state.second - 1);
     }
     return std::make_pair(next_state.first, next_state.second + 1);
@@ -107,9 +107,9 @@ Coordinate TClient::FindEndOfShip(const Coordinate ship_begin) {
   // TRY TO GO DOWN
   auto next_state = std::make_pair(ship_begin.first + 1, ship_begin.second);
   if (next_state.first < 10 
-      && ships_[next_state.first][next_state.second] == TClient::SHIP_PIECE_OK) {
+      && ships_[next_state.first][next_state.second] != TClient::WATER) {
     while (next_state.first < 10 
-           && ships_[next_state.first][next_state.second] == TClient::SHIP_PIECE_OK) {
+           && ships_[next_state.first][next_state.second] != TClient::WATER) {
       next_state = std::make_pair(next_state.first + 1, next_state.second);
     }
     return std::make_pair(next_state.first - 1, next_state.second);
@@ -117,9 +117,9 @@ Coordinate TClient::FindEndOfShip(const Coordinate ship_begin) {
   // TRY TO GO RIGHT
   next_state = std::make_pair(ship_begin.first, ship_begin.second + 1);
   if (next_state.second < 10 
-      && ships_[next_state.first][next_state.second] == TClient::SHIP_PIECE_OK) {
+      && ships_[next_state.first][next_state.second] != TClient::WATER) {
     while (next_state.second < 10 
-           && ships_[next_state.first][next_state.second] == TClient::SHIP_PIECE_OK) {
+           && ships_[next_state.first][next_state.second] != TClient::WATER) {
       next_state = std::make_pair(next_state.first, next_state.second + 1);
     }
     return std::make_pair(next_state.first, next_state.second - 1);
@@ -216,8 +216,19 @@ std::vector<Coordinate> TClient::GetInclusiveShip(Coordinate coordinate) {
 // The following function does a change in ships-vector (if necessary)
 // and returns MISS, HALF, KILL or WIN.
 size_t TClient::GetShooting(const size_t x_coord, const size_t y_coord) {
-
-  // CODE HERE
+  if (ships_[y_coord - 1][x_coord - 1] == TClient::WATER) {
+    return TCLIENT::MISS;
+  } else if (ships_[y_coord - 1][x_coord - 1] == TClient::SHIP_PIECE_OK) {
+    ships_[y_coord - 1][x_coord - 1] = TClient::SHIP_PIECE_DEAD;
+    ++correct_hits_counter_;
+    if (correct_hits_counter_ == TClient::kCorrectHitsForWin) {
+      return TClient::WIN;
+    }
+    
+    auto inclusive_ship = GetInclusiveShip(std::make_pair(y_coord - 1, x_coord - 1));
+    for ()
+  }
+  
 
 }
 
