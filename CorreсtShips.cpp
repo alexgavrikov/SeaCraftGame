@@ -50,6 +50,32 @@ Coordinate FindEndOfShip(const Coordinate ship_begin,
   return ship_begin;                  
 }
 
+Coordinate FindBeginOfShip(const Coordinate ship_begin,
+                         std::vector<std::vector<bool>>& grid) {
+  // TRY TO GO DOWN
+  auto next_state = std::make_pair(ship_begin.first - 1, ship_begin.second);
+  if (next_state.first >= 0 
+      && grid[next_state.first][next_state.second]) {
+    while (next_state.first >= 0 
+           && grid[next_state.first][next_state.second]) {
+      next_state = std::make_pair(next_state.first - 1, next_state.second);
+    }
+    return std::make_pair(next_state.first + 1, next_state.second);
+  }
+  // TRY TO GO RIGHT
+  next_state = std::make_pair(ship_begin.first, ship_begin.second - 1);
+  if (next_state.second >= 0 
+      && grid[next_state.first][next_state.second]) {
+    while (next_state.second >= 0 
+           && grid[next_state.first][next_state.second]) {
+      next_state = std::make_pair(next_state.first, next_state.second - 1);
+    }
+    return std::make_pair(next_state.first, next_state.second + 1);
+  }
+
+  return ship_begin;
+}
+
 std::vector<Coordinate> GetShip(const Coordinate ship_begin,
                                 const Coordinate ship_end) {
   std::vector<Coordinate> result;
@@ -164,29 +190,32 @@ bool IsGridCorrect(std::vector<std::vector<bool>>& grid) {
          && number_of_ships[2] == 2 && number_of_ships[3] == 1;
 }
 
-
+std::vector<Coordinate> GetInclusiveShip(Coordinate coordinate,
+                                         std::vector<std::vector<bool>>& grid) {
+  auto begin = FindBeginOfShip(coordinate, grid);
+  auto end = FindEndOfShip(coordinate, grid);
+  return GetShip(begin, end);
+}
 
 int main() {
   std::ifstream ifs("B.in");
-  std::cin.rdbuf(ifs.rdbuf());
    
   std::vector<std::vector<bool>> grid(10, std::vector<bool>(10));
   for (int i = 0; i < 10; ++i) {
     for (int j = 0; j < 10; ++j) {
       bool tmp;
-      std::cin >> tmp;
+      ifs >> tmp;
       grid[i][j] = tmp;
     }
   }
   ifs.close();
   
   std::cout << IsGridCorrect(grid);
-/*   
+   
   while (true) {
     int x, y;
     std::cin >> x >> y;
-    std::cout << FindEndOfShip(std::make_pair(x, y), grid).first << " " 
-              << FindEndOfShip(std::make_pair(x, y), grid).second << "\n";
+    for (auto z : GetInclusiveShip(std::make_pair(x, y), grid)) std::cout << z.first << " " << z.second << "\n";
   }
-*/
+
 }
