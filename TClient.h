@@ -99,7 +99,7 @@ private:
   // CorrectShips functions
   using Coordinate = std::pair<int, int>;
   Coordinate FindEndOfShip(const Coordinate ship_begin);
-  Coordinate FindEndOfShip(const Coordinate ship_begin);
+  Coordinate FindBeginOfShip(const Coordinate ship_begin);
   std::vector<Coordinate> GetShip(const Coordinate ship_begin,
                                   const Coordinate ship_end);
   bool IsInGrid(const Coordinate coordinate);
@@ -107,6 +107,7 @@ private:
                 const Coordinate ship_begin, const Coordinate ship_end);
   std::vector<Coordinate> SurroundingOfShip(const Coordinate ship_begin,
                                             const Coordinate ship_end);
+  std::vector<Coordinate> GetInclusiveShip(Coordinate coordinate);
   // End of CorrectShips functions
 };
 
