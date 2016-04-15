@@ -146,9 +146,12 @@ bool Server::RecieveShips(char* buf,
 
   // Check if it is about receiving ships. if not return false
   // if yes, extracting ships from  buf into client_iterator->ships; i. e. parsing buf here
+  // message about ships has to look like: "ships:1010..000" (maybe with some html-wrapping)
+  // One Hundred bits (zeros or ones) in message above! Развёртываются в двумерную таблицу:
+  // первые 10 бит - первая строка (то есть ships[0]), вторые 10 бит - вторая строка (то есть ships[1]),
+  // и так далее.
   // CODE HERE
 
-  // Function TClient::CorrectShips() should be implemented
   if (client_iterator->CorrectShips()) {
     client_iterator->PrepareMessage("shipping:ok");
     client_iterator->status_ = TClient::WAITING;
@@ -185,6 +188,9 @@ bool Server::RecieveStep(char* buf,
   // Check if buf's message is about receiving step. if not return false
   // if true: coordinates of his step should be in x_coord and y_coord
   // (let numeration be from 1 to 10).
+  // message about step has to look like: "step:5:7" (maybe with some html-wrapping)
+  // 5 in this example means 5th row, 7 means 7th column.
+  // In the example: x_coord = 7, y_coord = 5
   // CODE HERE
 
   size_t result_of_shooting = client_iterator->opponent_->GetShooting(
