@@ -1,7 +1,7 @@
 /*
  * TClient.h
  *
- *  Created on: 8 àïð. 2016 ã.
+ *  Created on: 8 Г ГЇГ°. 2016 ГЈ.
  *      Author: user
  */
 
@@ -19,6 +19,7 @@
 #include <mutex>
 #include <atomic>
 #include <queue>
+#include <algorithm>
 
 class ThreadSafeQueue {
 public:
@@ -84,16 +85,16 @@ private:
  
   // CorrectShips functions
   using Coordinate = std::pair<int, int>;
-  Coordinate FindEndOfShip(const Coordinate ship_begin);
-  Coordinate FindBeginOfShip(const Coordinate ship_begin);
+  Coordinate FindEndOfShip(const Coordinate ship_begin) const;
+  Coordinate FindBeginOfShip(const Coordinate ship_begin) const;
   std::vector<Coordinate> GetShip(const Coordinate ship_begin,
-                                  const Coordinate ship_end);
-  bool IsInGrid(const Coordinate coordinate);
+                                  const Coordinate ship_end) const;
+  bool IsInGrid(const Coordinate coordinate) const;
   bool IsInShip(const Coordinate coordinate, 
-                const Coordinate ship_begin, const Coordinate ship_end);
+                const Coordinate ship_begin, const Coordinate ship_end) const;
   std::vector<Coordinate> SurroundingOfShip(const Coordinate ship_begin,
-                                            const Coordinate ship_end);
-  std::vector<Coordinate> GetInclusiveShip(Coordinate coordinate);
+                                            const Coordinate ship_end) const;
+  std::vector<Coordinate> GetInclusiveShip(Coordinate coordinate) const;
   // End of CorrectShips functions  
   
   static const size_t kCorrectHitsForWin = 18;
@@ -113,4 +114,3 @@ private:
 };
 
 #endif /* TCLIENT_H_ */
-
