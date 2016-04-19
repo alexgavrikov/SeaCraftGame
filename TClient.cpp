@@ -1,7 +1,7 @@
 /*
  * TClient.cpp
  *
- *  Created on: 9 àïð. 2016 ã.
+ *  Created on: 9 Г ГЇГ°. 2016 ГЈ.
  *      Author: user
  */
 
@@ -51,7 +51,7 @@ bool TClient::CorrectShips() const {
       }
       if (ships_[y_cord][x_cord] == TClient::SHIP_PIECE_OK) {
         auto begin = std::make_pair(y_cord, x_cord);
-        auto end = FindEndOfShip(begin, grid);
+        auto end = FindEndOfShip(begin);
         int ship_size = GetShip(begin, end).size();
         if (ship_size > 4) {
           return false;
@@ -78,7 +78,7 @@ bool TClient::CorrectShips() const {
          && number_of_ships[2] == 2 && number_of_ships[3] == 1;
 }
 
-Coordinate TClient::FindBeginOfShip(const Coordinate ship_begin) {
+Coordinate TClient::FindBeginOfShip(const Coordinate ship_begin) const {
   // TRY TO GO DOWN
   auto next_state = std::make_pair(ship_begin.first - 1, ship_begin.second);
   if (next_state.first >= 0 
@@ -103,7 +103,7 @@ Coordinate TClient::FindBeginOfShip(const Coordinate ship_begin) {
   return ship_begin;
 }
 
-Coordinate TClient::FindEndOfShip(const Coordinate ship_begin) {
+Coordinate TClient::FindEndOfShip (const Coordinate ship_begin) const {
   // TRY TO GO DOWN
   auto next_state = std::make_pair(ship_begin.first + 1, ship_begin.second);
   if (next_state.first < 10 
@@ -129,7 +129,7 @@ Coordinate TClient::FindEndOfShip(const Coordinate ship_begin) {
 }
 
 std::vector<Coordinate> TClient::GetShip(const Coordinate ship_begin,
-                                         const Coordinate ship_end) {
+                                         const Coordinate ship_end) const {
   std::vector<Coordinate> result;
   bool is_vertical = (ship_begin.second == ship_end.second);
   Coordinate current_state = ship_begin;
@@ -146,13 +146,13 @@ std::vector<Coordinate> TClient::GetShip(const Coordinate ship_begin,
   return result;
 }
 
-bool TClient::IsInGrid(const Coordinate coordinate) {
+bool TClient::IsInGrid(const Coordinate coordinate) const {
   return -1 < coordinate.first && -1 < coordinate.second 
          && coordinate.first < 10 && coordinate.second < 10;
 }
 
 bool TClient::IsInShip(const Coordinate coordinate, 
-                       const Coordinate ship_begin, const Coordinate ship_end) {
+                       const Coordinate ship_begin, const Coordinate ship_end) const {
   if (ship_begin.first == ship_end.first) {  // Horizontal ship
     return coordinate.first == ship_begin.first 
            && coordinate.second >= ship_begin.second 
@@ -165,7 +165,7 @@ bool TClient::IsInShip(const Coordinate coordinate,
 }
 
 std::vector<Coordinate> TClient::SurroundingOfShip(const Coordinate ship_begin,
-                                                   const Coordinate ship_end) {
+                                                   const Coordinate ship_end) const {
   std::vector<Coordinate> surrounding_ships;
   
   bool is_vertical = (ship_begin.second == ship_end.second);
@@ -204,7 +204,7 @@ std::vector<Coordinate> TClient::SurroundingOfShip(const Coordinate ship_begin,
   return surrounding_ships;
 }
 
-std::vector<Coordinate> TClient::GetInclusiveShip(Coordinate coordinate) {
+std::vector<Coordinate> TClient::GetInclusiveShip(Coordinate coordinate) const {
   auto begin = FindBeginOfShip(coordinate);
   auto end = FindEndOfShip(coordinate);
   return GetShip(begin, end);
@@ -219,7 +219,7 @@ std::vector<Coordinate> TClient::GetInclusiveShip(Coordinate coordinate) {
 // Returns HALF if you strike DEAD piece
 size_t TClient::GetShooting(const size_t x_coord, const size_t y_coord) {
   if (ships_[y_coord - 1][x_coord - 1] == TClient::WATER) {
-    return TCLIENT::MISS;
+    return TClient::MISS;
   } else if (ships_[y_coord - 1][x_coord - 1] == TClient::SHIP_PIECE_OK) {
     ships_[y_coord - 1][x_coord - 1] = TClient::SHIP_PIECE_DEAD;
     ++correct_hits_counter_;
