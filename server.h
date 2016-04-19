@@ -1,8 +1,14 @@
+#ifdef _WIN32
+#include <WinSock2.h>
+#pragma comment(lib, "Ws2_32.lib")
+#elif __unix__
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
+#endif
+
 #include <memory>
 #include <string>
 #include <exception>
@@ -36,7 +42,12 @@ private:
         : Socket(socket) {
     }
     ~TSocketHolder() {
+#ifdef _WIN32
+      closesocket(Socket);
+      WSACleanup();
+#elif __unix__
       close(Socket);
+#endif
     }
     int GetSocket() const {
       return Socket;

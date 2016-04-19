@@ -8,11 +8,17 @@
 #ifndef TCLIENT_H_
 #define TCLIENT_H_
 
+#ifdef _WIN32
+#include <WinSock2.h>
+#pragma comment(lib, "Ws2_32.lib")
+#elif __unix__
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
+#endif
+
 #include <cstdlib>
 #include <list>
 #include <vector>

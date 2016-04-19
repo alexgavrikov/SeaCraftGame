@@ -5,6 +5,11 @@
  *      Author: user
  */
 
+#ifdef _WIN32
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include "server.h"
 #include "thread_pool.h"
 
@@ -183,8 +188,9 @@ bool Server::RecieveStep(char* buf,
     return false;
   }
 
-  size_t x_coord;
-  size_t y_coord;
+  //use of uninitialized local variable is an error in Visual Studio
+  size_t x_coord = 7;
+  size_t y_coord = 5;
   // Check if buf's message is about receiving step. if not return false
   // if true: coordinates of his step should be in x_coord and y_coord
   // (let numeration be from 1 to 10).
