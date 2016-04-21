@@ -66,7 +66,7 @@ void Server::AcceptLoop() {
       // Something like that:
       // clients_.back().PrepareMessage(html);
       // clients_.back().SendMessages();
-      // As for wrapping-routine, I suppose it will be inside function Server::SendMessages()
+      // As for wrapping-routine, I suppose it will be inside function TClient::SendMessages()
       // CODE HERE
 
       Clients::iterator new_player_iter = --clients_.end();
@@ -106,11 +106,19 @@ bool Server::RecvLoop(Clients::iterator client) {
 void Server::ParseData(char* buf,
                        int size,
                        Clients::iterator client_iterator) {
-  if (RecieveShips(buf, size, client_iterator))
+  // Functions Server::RecieveShips(...) and Server::RecieveStep(...) contain only preparing messages 
+  // (pushing them into the clients' messages_queues by calling TClient::PrepareMessage(...)). And after
+  // that we send messages by calling TClient::SendMessages()
+  
+  if (RecieveShips(buf, size, client_iterator)) {
+    client_iterator->SendMessages();
     return;
+  }
 
-  if (RecieveStep(buf, size, client_iterator))
+  if (RecieveStep(buf, size, client_iterator)) {
+    client_iterator->SendMessages();
     return;
+  }
 
   client_iterator->SendMessages();
 }
@@ -151,7 +159,7 @@ bool Server::RecieveShips(char* buf,
 
   // Check if it is about receiving ships. if not return false
   // if yes, extracting ships from  buf into client_iterator->ships; i. e. parsing buf here
-  // message about ships has to look like: "ships:1010..000" (maybe with some html-wrapping)
+  // message about ships has to look like: "ships:1010..000" (maybe with some HTTP-wrapping)
   // One Hundred bits (zeros or ones) in message above! Развёртываются в двумерную таблицу:
   // первые 10 бит - первая строка (то есть ships[0]), вторые 10 бит - вторая строка (то есть ships[1]),
   // и так далее.
@@ -194,7 +202,7 @@ bool Server::RecieveStep(char* buf,
   // Check if buf's message is about receiving step. if not return false
   // if true: coordinates of his step should be in x_coord and y_coord
   // (let numeration be from 1 to 10).
-  // message about step has to look like: "step:5:7" (maybe with some html-wrapping)
+  // message about step has to look like: "step:5:7" (maybe with some HTTP-wrapping)
   // 5 in this example means 5th row, 7 means 7th column.
   // In the example: x_coord = 7, y_coord = 5
   // CODE HERE
