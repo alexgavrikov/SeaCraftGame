@@ -9,9 +9,8 @@
 
 void TClient::SendMessages() {
 
-  // Here we may need some wrapping-routine. Maybe we need to wrap a data
-  // into html-headers-wrapper
-  // Maybe it is not necessary if we use Qt.
+  // Here we need some wrapping-routine. We need to wrap whole_message
+  // into HTTP-headers-wrapper
   // CODE HERE
 
   std::string whole_message;
