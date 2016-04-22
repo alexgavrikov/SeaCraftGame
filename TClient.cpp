@@ -11,7 +11,7 @@
 
 void TClient::SendMessages() {
 
-  // std::stringstream whole_message;
+   std::stringstream whole_message;
 
   // Here we need some wrapping-routine. We need to wrap whole_message
   // into HTTP-headers-wrapper
