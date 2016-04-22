@@ -12,6 +12,8 @@
 
 #include "server.h"
 #include "thread_pool.h"
+#include <iostream>
+#include <fstream>
 
 bool Server::ResolveHost(const std::string &host, int &addr) {
   hostent *ent = gethostbyname(host.c_str());
@@ -38,7 +40,8 @@ void Server::Bind(int port, const std::string &host) {
     std::cout << INADDR_ANY << std::endl;
   }
   if (bind(listener_socket_holder_->GetSocket(),
-      reinterpret_cast<sockaddr*>(&address), sizeof(address)) < 0)
+           reinterpret_cast<sockaddr*>(&address),
+           sizeof(address)) < 0)
     throw std::runtime_error("can't bind");
   if (listen(listener_socket_holder_->GetSocket(), 1) < 0)
     throw std::runtime_error("can't start listening");
@@ -46,26 +49,37 @@ void Server::Bind(int port, const std::string &host) {
 
 void Server::AcceptLoop() {
   static constexpr size_t kInitialThreadsCount = 2;
-  char html[1024];
+  char html[1024] = "123";
 
-  // Reading HTML-page from file
-  // CODE HERE
+  std::string str;
+  std::ifstream html_file("../index.html");
+  while (!html_file.eof()) {
+    std::string tmp;
+    std::getline(html_file, tmp);
+    str += tmp;
+  }
 
   ThreadPool threads_pool(kInitialThreadsCount);
   while (true) {
     // std::cout << "main: " << "start while-iteraton" << std::endl;
-    int sock = accept(listener_socket_holder_->GetSocket(), nullptr,
-        nullptr);
+    int sock = accept(listener_socket_holder_->GetSocket(),
+                      nullptr,
+                      nullptr);
     if (sock < 0) {
       std::cout << "can't bind" << std::endl;
     } else {
+      std::cout << "    sock: " << sock << std::endl;
       std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
       clients_.emplace_back(sock, clients_.end(), TClient::SHIPPING);
-
+      char buf[1024];
+      int res = recv(sock, buf, sizeof(buf), 0);
+      std::cout << "           master :" << sock << " " << buf
+          << std::endl;
       // Here we are still not sure about a way to send HTML-page.
       // Something like that:
       clients_.back().PrepareMessage(html);
       clients_.back().SendMessages();
+      strcat(html, "4");
       // As for wrapping-routine, I suppose it will be inside function TClient::SendMessages()
       // CODE HERE
 
@@ -92,8 +106,11 @@ bool Server::RecvLoop(Clients::iterator client) {
     // std::cout << "  non-main: " << "new while-iteration" << std::endl;
     char buf[1024];
     int res = recv(client->client_socket_, buf, sizeof(buf), 0);
+    std::cout << "           daughter  :" << client->client_socket_ << " "
+        << buf << std::endl;
     // std::cout << "  non-main: " << "received" << std::endl;
     if (res <= 0) {
+      std::cout << "disconnect" << client->client_socket_ << std::endl;
       Disconnect(client);
       return false;
     }
@@ -112,8 +129,9 @@ void Server::ParseData(char* buf,
 
   //Skipping HTTP header, its end is indicated by an empty line
   for (buf += 2, size -= 2;
-       size > 0 && (*(buf - 1) != '\n' || *(buf - 2) != '\n');
-       ++buf, --size) {}
+      size > 0 && (*(buf - 1) != '\n' || *(buf - 2) != '\n');
+      ++buf, --size) {
+  }
 
   if (RecieveShips(buf, size, client_iterator)) {
     client_iterator->SendMessages();
@@ -201,7 +219,7 @@ bool Server::RecieveShips(char* buf,
       client_iterator->opponent_->PrepareMessage("opponent:shipped");
       // The following section is critical. We need mutexing.
       std::lock(client_iterator->mutex_for_starting_game,
-          client_iterator->opponent_->mutex_for_starting_game);
+                client_iterator->opponent_->mutex_for_starting_game);
       if (client_iterator->opponent_->status_ == TClient::WAITING) {
         client_iterator->status_ = TClient::WAITING_STEP;
         client_iterator->opponent_->status_ = TClient::MAKING_STEP;
@@ -277,14 +295,13 @@ bool Server::RecieveStep(char* buf,
   case 2:
     if (buf[0] != '1' || buf[1] != '0') {
       return false;
-    }
-    else {
+    } else {
       x_coord = 10;
     }
   }
 
-  size_t result_of_shooting = client_iterator->opponent_->GetShooting(
-      x_coord, y_coord);
+  size_t result_of_shooting =
+      client_iterator->opponent_->GetShooting(x_coord, y_coord);
 
   char message_ending[7];
   sprintf(message_ending, ":%d:%d", x_coord, y_coord);
@@ -293,8 +310,10 @@ bool Server::RecieveStep(char* buf,
   case TClient::MISS: {
     char message_for_client[12] = "field2:miss";
     char message_for_opponent[12] = "field1:miss";
-    ConcatenateAndSend(client_iterator, message_for_client,
-        message_for_opponent, message_ending);
+    ConcatenateAndSend(client_iterator,
+                       message_for_client,
+                       message_for_opponent,
+                       message_ending);
     client_iterator->status_ = TClient::WAITING_STEP;
     client_iterator->opponent_->status_ = TClient::MAKING_STEP;
     break;
@@ -303,24 +322,30 @@ bool Server::RecieveStep(char* buf,
   case TClient::HALF: {
     char message_for_client[12] = "field2:half";
     char message_for_opponent[12] = "field1:half";
-    ConcatenateAndSend(client_iterator, message_for_client,
-        message_for_opponent, message_ending);
+    ConcatenateAndSend(client_iterator,
+                       message_for_client,
+                       message_for_opponent,
+                       message_ending);
     break;
   }
 
   case TClient::KILL: {
     char message_for_client[12] = "field2:kill";
     char message_for_opponent[12] = "field1:kill";
-    ConcatenateAndSend(client_iterator, message_for_client,
-        message_for_opponent, message_ending);
+    ConcatenateAndSend(client_iterator,
+                       message_for_client,
+                       message_for_opponent,
+                       message_ending);
     break;
   }
 
   case TClient::WIN: {
     char message_for_client[12] = "field2:kill";
     char message_for_opponent[12] = "field1:kill";
-    ConcatenateAndSend(client_iterator, message_for_client,
-        message_for_opponent, message_ending);
+    ConcatenateAndSend(client_iterator,
+                       message_for_client,
+                       message_for_opponent,
+                       message_ending);
     client_iterator->PrepareMessage("won");
     client_iterator->opponent_->PrepareMessage("lost");
     break;

@@ -6,6 +6,7 @@
  */
 
 #include "TClient.h"
+#include <iostream>
 
 void TClient::SendMessages() {
 
@@ -14,10 +15,10 @@ void TClient::SendMessages() {
   // Here we need some wrapping-routine. We need to wrap whole_message
   // into HTTP-headers-wrapper
   // CODE HERE
-  whole_message += "HTTP/1.1 200 OK\n\n";
+  whole_message += "HTTP/1.1 200 OK\nContent-Length: 4\nContent-Type: text/html\n\n";
 
   if (messages_queue.empty()) {
-    whole_message = "OK";
+    whole_message += "OKK";
   }
   while (!messages_queue.empty()) {
     whole_message += messages_queue.dequeue();
@@ -32,6 +33,9 @@ void TClient::SendMessages() {
     data += res;
     sz -= res;
   }
+  std::cout <<"wkjek:"<<client_socket_<<std::endl;
+  std::cout <<whole_message<<std::endl;
+  std::cout <<"wkjek"<<std::endl;
 }
 
 void TClient::PrepareMessage(const std::string& message) {
