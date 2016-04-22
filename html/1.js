@@ -156,5 +156,5 @@ $(document).on('click', '#send_ships', function() {
     //$.post('/', '', function(data) {
     //    analiseAnswer(data)
     //})
-    kPostMsg = '' // TODO ships_msg
+    kPostMsg = ships_msg // TODO ships_msg
 })
