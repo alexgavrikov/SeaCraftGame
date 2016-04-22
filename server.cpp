@@ -51,15 +51,15 @@ void Server::AcceptLoop() {
   static constexpr size_t kInitialThreadsCount = 2;
   std::string html;
   html.reserve(1000000);
-  std::ifstream html_file("../html/index.html");
+  std::ifstream html_file("../html/index.html", std::ios_base::binary);
   std::string tmp;
-  size_t counter = 0;
-  char las_s;
-  while (std::getline(html_file, tmp)) {
+//  size_t counter = 0;
+//  char las_s;
+  while (std::getline(html_file, tmp,'\r')) {
 //    tmp = "aaa";
 //    const char* buf = tmp.c_str();
-    las_s = tmp.back();
-    tmp.pop_back();
+//    las_s = tmp.back();
+//    tmp.pop_back();
 
     html = html + tmp;
 //    std::cout << counter << std::endl;
@@ -67,12 +67,14 @@ void Server::AcceptLoop() {
 //    std::cout << tmp << std::endl;
 //    std::cout << counter << std::endl;
 //    std::cout << html << std::endl;
-    ++counter;
+//    ++counter;
   }
-  html.push_back(las_s);
-  std::cout << "weg" << std::endl;
-  std::cout << html << std::endl;
-  std::cout << "weg" << std::endl;
+//  html.push_back(las_s);
+//  std::cout << "weg" << std::endl;
+//  std::cout << html.c_str() << std::endl;
+//  std::cout << "weg" << std::endl;
+//  std::cout << html << std::endl;
+//  std::cout << "weg" << std::endl;
 
   ThreadPool threads_pool(kInitialThreadsCount);
   while (true) {
@@ -88,7 +90,7 @@ void Server::AcceptLoop() {
       clients_.emplace_back(sock, clients_.end(), TClient::SHIPPING);
       char buf[1024];
       int res = recv(sock, buf, sizeof(buf), 0);
-      std::cout << "           master :" << sock << " " << buf
+      std::cout << "           master: " << sock << " " << buf
           << std::endl;
       clients_.back().PrepareMessage(html);
       clients_.back().SendMessages();
