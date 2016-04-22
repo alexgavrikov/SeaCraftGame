@@ -7,25 +7,29 @@
 
 #include "TClient.h"
 #include <iostream>
+#include <sstream>
 
 void TClient::SendMessages() {
 
-  std::string whole_message;
+  std::stringstream whole_message;
 
   // Here we need some wrapping-routine. We need to wrap whole_message
   // into HTTP-headers-wrapper
   // CODE HERE
-  whole_message += "HTTP/1.1 200 OK\nContent-Length: 4\nContent-Type: text/html\n\n";
-
+  whole_message << "HTTP/1.1 200 OK\nContent-Length: ";// \nContent-Type: text/html\n\n";"
+  std::string message;
   if (messages_queue.empty()) {
-    whole_message += "OKK";
+    message = "OKK";
   }
-  while (!messages_queue.empty()) {
-    whole_message += messages_queue.dequeue();
-    whole_message += ";";
+  else {
+    message = messages_queue.dequeue();
   }
-  const char* data = whole_message.c_str();
-  size_t sz = whole_message.size();
+  whole_message << message.size();
+  whole_message << "\nContent-Type: text/html\n\n";
+  whole_message << message;
+
+  const char* data = whole_message.str().c_str();
+  size_t sz = whole_message.str().size();
   for (; sz > 0;) {
     int res = send(client_socket_, data, sz, 0);
     if (res <= 0)
@@ -34,7 +38,7 @@ void TClient::SendMessages() {
     sz -= res;
   }
   std::cout <<"wkjek:"<<client_socket_<<std::endl;
-  std::cout <<whole_message<<std::endl;
+  std::cout <<whole_message.str()<<std::endl;
   std::cout <<"wkjek"<<std::endl;
 }
 

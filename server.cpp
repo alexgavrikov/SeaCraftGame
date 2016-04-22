@@ -49,15 +49,33 @@ void Server::Bind(int port, const std::string &host) {
 
 void Server::AcceptLoop() {
   static constexpr size_t kInitialThreadsCount = 2;
-  char html[1024] = "123";
+//  char html[1024] = "123";
 
-  std::string str;
-  std::ifstream html_file("../index.html");
-  while (!html_file.eof()) {
+  std::string html;
+  html.reserve(1000000);
+  std::ifstream html_file("../html/index.html");
     std::string tmp;
-    std::getline(html_file, tmp);
-    str += tmp;
+    size_t counter = 0;
+    char las_s;
+  while ( std::getline(html_file, tmp)) {
+//    tmp = "aaa";
+//    const char* buf = tmp.c_str();
+    las_s = tmp.back();
+    tmp.pop_back();
+
+    html = html + tmp;
+    std::cout <<counter<<std::endl;
+    std::cout <<tmp.size()<<std::endl;
+    std::cout <<tmp<<std::endl;
+    std::cout <<counter<<std::endl;
+    std::cout <<html<<std::endl;
+    ++counter;
   }
+  html.push_back(las_s);
+  std::cout <<"weg"<<std::endl;
+  std::cout <<html<<std::endl;
+  std::cout <<"weg"<<std::endl;
+//  const char* html = html.c_str();
 
   ThreadPool threads_pool(kInitialThreadsCount);
   while (true) {
@@ -79,7 +97,7 @@ void Server::AcceptLoop() {
       // Something like that:
       clients_.back().PrepareMessage(html);
       clients_.back().SendMessages();
-      strcat(html, "4");
+//      strcat(html, "4");
       // As for wrapping-routine, I suppose it will be inside function TClient::SendMessages()
       // CODE HERE
 
