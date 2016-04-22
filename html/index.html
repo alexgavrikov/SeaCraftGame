@@ -1,0 +1,45 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>сайт</title>
+    <script src="js/jquery-2.1.4.min.js" type="text/javascript"></script>
+    <script src="js/1.js" type="text/javascript"></script>
+    <style>
+        table {
+            table-layout: fixed;
+            width: 400px;
+            height: 400px;
+        }
+        td {
+            height: 10%;
+            width: 10%;
+            background-color: white;
+            overflow: hidden;
+        }
+        td div {
+            border-radius: 50%;
+            width: 10px;
+            height: 10px;
+            background: red;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="twoTables" style="width: 1000px; display: block; margin-left: auto; margin-right: auto; 
+                               border: 1px solid grey; overflow:auto; padding: 5px">
+        <div style="float:left">
+            <div>Моя поляна</div>
+            <table id="my_table" cellspacing="0" cellpadding="0" border="1"></table>
+        </div>
+        <div style="float:left; width:100px; margin: 50px">
+            <button id="send_ships" style="margin: 0 auto">Отправить расстановку</button>
+            <div id="status_div" style="margin: 10px auto; text-align: center"></div>
+        </div>
+        <div style="float:right">
+            <div>Поляна противника</div>
+            <table id="enemy_table" cellspacing="0" cellpadding="0" border="1"></table>
+        </div>
+    </div>
+</body>
+</html>
