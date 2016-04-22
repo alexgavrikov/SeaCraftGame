@@ -22,13 +22,13 @@ var setStatus = function(str) {
     kStatus = str
     div = $('#status_div')
     if (str == 'shipping')
-        div.html('Статус: расстановка кораблей')
+        div.html('Status: ship placement')
     else if (str == 'enemy_turn')
-        div.html('Статус: ход пртивника')
+        div.html('Status: enemy turn')
     else if (str == 'my_turn')
-        div.html('Статус: мой ход')
+        div.html('Status: my turn')
     else if (str == 'waiting')
-        div.html('Статус: ожидание')
+        div.html('Status: waiting')
 }
 
 var analiseAnswer = function(data) {
@@ -64,29 +64,29 @@ var analiseAnswer = function(data) {
             setStatus('my_turn')
     } else if (name == 'shipping') {
         if (data.split(':')[1] == 'wrong') {
-            alert('слишком тупая расстановка кораблей, давай поновой')
+            alert('Your ship placement is bad, please continue thinking')
             setStatus('shipping')
         } else {
-            alert('хорошая расстановка, можно играть')
+            alert('Your ship placement is good, you can play')
             setStatus('waiting')
         }
     } else if (name == 'opponent') {
         if (data.split(':')[1] == 'came')
-            alert('оппонент пришёл')
+            alert('Opponent came')
         else if (data.split(':')[1] == 'shipped')
-            alert('оппонент расставил кораблики')
+            alert('Opponent placed his ships')
         else if (data.split(':')[1] == 'left')
-            alert('оппонент свалил, обновляй страницу')
+            alert('Opponent has gone away, refresh your page')
     } else if (name == 'go1') {
-        alert('мы ходим первыми')
+        alert('Your turn is first')
         setStatus('my_turn')
     } else if (name == 'go2') {
-        alert('мы ходим вторыми')
+        alert('Opponent\'s turn is first')
         setStatus('enemy_turn')
     } else if (name == 'won') {
-        alert ('поздравляю с победой, обновляй страницу')
+        alert ('Congratulations! You win! Refresh your page')
     } else if (name == 'lost') {
-        alert ('поздравляю с поражением, обновляй страницу')
+        alert ('Congratulations! You lose! Refresh your page')
     }
 
 
@@ -125,14 +125,14 @@ $(document).on('click', '#enemy_table td', function() {
                 analiseAnswer(data)
             })
         } else {
-            alert('слишком тупой ход, давай поновой')
+            alert('You must not press here')
         }
     }
 })
 
 $(document).on('click', '#send_ships', function() {
     if (kStatus != 'shipping') {
-        alert('сейчас не время тыкать на кнопочку')
+        alert('You must not press here')
         return
     }
     setStatus('waiting')
