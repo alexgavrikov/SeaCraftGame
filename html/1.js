@@ -89,6 +89,8 @@ var analiseAnswer = function(data) {
     } else if (name == 'lost') {
         alert ('Congratulations! You lose! Refresh your page')
     }
+
+    kPostMsg = ''
 }
 
 
