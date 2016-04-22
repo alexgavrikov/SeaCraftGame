@@ -146,7 +146,7 @@ $(document).on('click', '#send_ships', function() {
         }
     }
     
-    $.post('/', ships_msg, function(data) {
+    $.post('/', '', function(data) {
         analiseAnswer(data)
     })
 })
