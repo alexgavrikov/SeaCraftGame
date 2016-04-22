@@ -1,5 +1,6 @@
 kTableSize = 10
 kStatus = 'shipping' // 'enemy_turn', 'my_turn', 'waiting'
+kPostMsg = ''
 
 var fillTable = function(elem) {
     var html = ''
@@ -88,8 +89,17 @@ var analiseAnswer = function(data) {
     } else if (name == 'lost') {
         alert ('Congratulations! You lose! Refresh your page')
     }
+}
 
 
+
+var makePost = function() {
+    setInterval(function() {
+        $.post('/', kPostMsg, function(data) {
+            analiseAnswer(data) // TODO delete comment
+        })
+    }, 2000) 
+    
 }
 
 $(document).ready(function() {
@@ -97,11 +107,7 @@ $(document).ready(function() {
     fillTable($('#my_table'))
     fillTable($('#enemy_table'))
     setStatus('shipping')
-    setInterval(function() {
-        $.post('/', '', function(data) {
-            analiseAnswer(data) // TODO delete comment
-        })
-    }, 2000) 
+    makePost()
 })
 
 $(document).on('click', '#my_table td', function() {
@@ -121,9 +127,10 @@ $(document).on('click', '#enemy_table td', function() {
             x = $(this).attr('id').split('_')[1]
             y = $(this).attr('id').split('_')[2]
             setStatus('enemy_turn')
-            $.post('/', 'turn:' + x + ':' + y, function(data) {
-                analiseAnswer(data)
-            })
+            //$.post('/', 'turn:' + x + ':' + y, function(data) {
+            //    analiseAnswer(data)
+            //}
+            kPostMsg = 'turn:' + x + ':' + y
         } else {
             alert('You must not press here')
         }
@@ -146,7 +153,8 @@ $(document).on('click', '#send_ships', function() {
         }
     }
     
-    $.post('/', '', function(data) {
-        analiseAnswer(data)
-    })
+    //$.post('/', '', function(data) {
+    //    analiseAnswer(data)
+    //})
+    kPostMsg = '' // TODO ships_msg
 })
