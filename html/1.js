@@ -1,6 +1,6 @@
 kTableSize = 10
 kStatus = 'shipping' // 'enemy_turn', 'my_turn', 'waiting'
-kPostMsg = ''
+kPostMsg = '-----------------------PRIVET-------------------------'
 
 var fillTable = function(elem) {
     var html = ''
@@ -89,8 +89,6 @@ var analiseAnswer = function(data) {
     } else if (name == 'lost') {
         alert ('Congratulations! You lose! Refresh your page')
     }
-
-    kPostMsg = ''
 }
 
 
@@ -98,7 +96,14 @@ var analiseAnswer = function(data) {
 var makePost = function() {
     setInterval(function() {
         $.post('/', kPostMsg, function(data) {
+            console.log(data)
             analiseAnswer(data) // TODO delete comment
+        }).done(function() {
+            console.log('done')
+        }).error(function() {
+            console.log('error')
+        }).always(function() {
+            kPostMsg = '-----------------------PRIVET-------------------------'
         })
     }, 2000) 
     
