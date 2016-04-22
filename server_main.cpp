@@ -16,6 +16,7 @@ int main() {
 
   Server s;
   s.Bind(1234, "");
+  s.AcceptLoop();
 
   return 0;
 }

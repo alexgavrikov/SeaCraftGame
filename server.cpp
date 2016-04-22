@@ -64,8 +64,8 @@ void Server::AcceptLoop() {
 
       // Here we are still not sure about a way to send HTML-page.
       // Something like that:
-      // clients_.back().PrepareMessage(html);
-      // clients_.back().SendMessages();
+      clients_.back().PrepareMessage(html);
+      clients_.back().SendMessages();
       // As for wrapping-routine, I suppose it will be inside function TClient::SendMessages()
       // CODE HERE
 
@@ -109,7 +109,12 @@ void Server::ParseData(char* buf,
   // Functions Server::RecieveShips(...) and Server::RecieveStep(...) contain only preparing messages 
   // (pushing them into the clients' messages_queues by calling TClient::PrepareMessage(...)). And after
   // that we send messages by calling TClient::SendMessages()
-  
+
+  //Skipping HTTP header, its end is indicated by an empty line
+  for (buf += 2, size -= 2;
+       size > 0 && (*(buf - 1) != '\n' || *(buf - 2) != '\n');
+       ++buf, --size) {}
+
   if (RecieveShips(buf, size, client_iterator)) {
     client_iterator->SendMessages();
     return;
@@ -163,7 +168,31 @@ bool Server::RecieveShips(char* buf,
   // One Hundred bits (zeros or ones) in message above! Развёртываются в двумерную таблицу:
   // первые 10 бит - первая строка (то есть ships[0]), вторые 10 бит - вторая строка (то есть ships[1]),
   // и так далее.
-  // CODE HERE
+
+  const int ships_message_size = 106;
+  if (size != ships_message_size) {
+    return false;
+  }
+
+  if (std::string(buf, 6) != "ships:") {
+    return false;
+  }
+
+  client_iterator->ships_.resize(10);
+  buf += 6;
+  for (int y_coord = 0; y_coord != 10; ++y_coord) {
+    client_iterator->ships_[y_coord].resize(10);
+    for (int x_coord = 0; x_coord != 10; ++x_coord) {
+      if (*buf == '0') {
+        client_iterator->ships_[y_coord][x_coord] = TClient::WATER;
+      } else if (*buf == '1') {
+        client_iterator->ships_[y_coord][x_coord] = TClient::SHIP_PIECE_OK;
+      } else {
+        client_iterator->ships_.clear();
+        return false;
+      }
+    }
+  }
 
   if (client_iterator->CorrectShips()) {
     client_iterator->PrepareMessage("shipping:ok");
@@ -205,7 +234,54 @@ bool Server::RecieveStep(char* buf,
   // message about step has to look like: "step:5:7" (maybe with some HTTP-wrapping)
   // 5 in this example means 5th row, 7 means 7th column.
   // In the example: x_coord = 7, y_coord = 5
-  // CODE HERE
+
+  const int min_step_message_size = 8;
+  const int max_step_message_size = 10;
+  if (size < min_step_message_size || size > max_step_message_size) {
+    return false;
+  }
+
+  if (std::string(buf, 5) != "step:") {
+    return false;
+  }
+  buf += 5;
+  size -= 5;
+
+  if (buf[1] == ':') {
+    if (buf[0] < '1' || buf[0] > '9') {
+      return false;
+    } else {
+      y_coord = buf[0] - '0';
+      buf += 2;
+      size -= 2;
+    }
+  } else {
+    if (buf[0] != '1' || buf[1] != '0' || buf[2] != ':') {
+      return false;
+    } else {
+      y_coord = 10;
+      buf += 3;
+      size -= 3;
+    }
+  }
+
+  switch (size) {
+  case 1:
+    if (buf[0] < '1' || buf[0] > '9') {
+      return false;
+    } else {
+      x_coord = buf[0] - '0';
+    }
+    break;
+
+  case 2:
+    if (buf[0] != '1' || buf[1] != '0') {
+      return false;
+    }
+    else {
+      x_coord = 10;
+    }
+  }
 
   size_t result_of_shooting = client_iterator->opponent_->GetShooting(
       x_coord, y_coord);

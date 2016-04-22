@@ -9,17 +9,19 @@
 
 void TClient::SendMessages() {
 
+  std::string whole_message;
+
   // Here we need some wrapping-routine. We need to wrap whole_message
   // into HTTP-headers-wrapper
   // CODE HERE
+  whole_message += "HTTP/1.1 200 OK\n\n";
 
-  std::string whole_message;
+  if (messages_queue.empty()) {
+    whole_message = "OK";
+  }
   while (!messages_queue.empty()) {
     whole_message += messages_queue.dequeue();
     whole_message += ";";
-  }
-  if(whole_message.empty()) {
-    whole_message = "OK";
   }
   const char* data = whole_message.c_str();
   size_t sz = whole_message.size();
