@@ -47,6 +47,8 @@ void Server::Bind(int port, const std::string &host) {
     throw std::runtime_error("can't start listening");
 }
 
+static std::mutex mut;
+
 void Server::AcceptLoop() {
   static constexpr size_t kInitialThreadsCount = 2;
   std::string html;
@@ -85,15 +87,23 @@ void Server::AcceptLoop() {
     if (sock < 0) {
       std::cout << "can't bind" << std::endl;
     } else {
-      std::cout << "    sock: " << sock << std::endl;
+      mut.lock();
+      std::cout << "    Socket came: " << sock << std::endl;
+      std::cout <<std::endl;
       std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
       clients_.emplace_back(sock, clients_.end(), TClient::SHIPPING);
       char buf[1024];
       int res = recv(sock, buf, sizeof(buf), 0);
-      std::cout << "           master: " << sock << " " << buf
+      std::cout << "master received from socket: " << sock << " message " << buf
           << std::endl;
+      std::cout <<"END OF MESSAGE"<<std::endl;
+      std::cout <<std::endl;
       clients_.back().PrepareMessage(html);
+  std::cout << "Master sends to socket:" << sock <<" message: "<<std::endl;
       clients_.back().SendMessages();
+  std::cout << "END OF MESSAGE" << std::endl;
+      std::cout <<std::endl;
+      mut.unlock();
 //      strcat(html, "4");
       // As for wrapping-routine, I suppose it will be inside function TClient::SendMessages()
       // CODE HERE
@@ -121,8 +131,12 @@ bool Server::RecvLoop(Clients::iterator client) {
     // std::cout << "  non-main: " << "new while-iteration" << std::endl;
     char buf[1024];
     int res = recv(client->client_socket_, buf, sizeof(buf), 0);
-    std::cout << "           daughter  :" << client->client_socket_ << " "
+    mut.lock();
+    std::cout << "daughter received from socket:" << client->client_socket_ << " message: "
         << buf << std::endl;
+    std::cout <<"END OF MESSAGE"<<std::endl;
+    std::cout <<std::endl;
+    mut.unlock();
     // std::cout << "  non-main: " << "received" << std::endl;
     if (res <= 0) {
       std::cout << "disconnect" << client->client_socket_ << std::endl;
@@ -149,16 +163,28 @@ void Server::ParseData(char* buf,
   }
 
   if (RecieveShips(buf, size, client_iterator)) {
+    mut.lock();
     client_iterator->SendMessages();
+    std::cout <<"END OF MESSAGE"<<std::endl;
+    std::cout <<std::endl;
+    mut.unlock();
     return;
   }
 
   if (RecieveStep(buf, size, client_iterator)) {
+    mut.lock();
     client_iterator->SendMessages();
+    std::cout <<"END OF MESSAGE"<<std::endl;
+    std::cout <<std::endl;
+    mut.unlock();
     return;
   }
 
+    mut.lock();
   client_iterator->SendMessages();
+    std::cout <<"END OF MESSAGE"<<std::endl;
+    std::cout <<std::endl;
+    mut.unlock();
 }
 
 void Server::ConnectTwoClients(Clients::iterator free_player_iter_first,

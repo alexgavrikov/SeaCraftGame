@@ -33,9 +33,7 @@ void TClient::SendMessages() {
     data += res;
     sz -= res;
   }
-  std::cout << "wkjek:" << client_socket_ << std::endl;
   std::cout << whole_message.str() << std::endl;
-  std::cout << "wkjek" << std::endl;
 }
 
 void TClient::PrepareMessage(const std::string& message) {
