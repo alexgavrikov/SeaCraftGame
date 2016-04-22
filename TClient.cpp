@@ -13,7 +13,7 @@ void TClient::SendMessages() {
 
   // std::stringstream whole_message;
 
-  // Here we need some wrapping-routine. We need to wrap whole_message
+  
   // into HTTP-headers-wrapper
   // CODE HERE
   whole_message << "HTTP/1.1 200 OK\nContent-Length: ";// \nContent-Type: text/html\n\n";"
