@@ -75,44 +75,55 @@ void Server::LoopOfSendingHTML() {
   std::ifstream html_file("../html/index.html", std::ios_base::binary);
   std::string file_line;
   std::string file_line_second;
+  std::string file_line_third;
   std::getline(html_file, file_line, '\r');
-  while (std::getline(html_file, file_line_second, '\r')) {
+  std::getline(html_file, file_line_second, '\r');
+  while (std::getline(html_file, file_line_third, '\r')) {
     html.append(file_line);
-    file_line = file_line_second;
+    std::swap(file_line, file_line_second);
+    std::swap(file_line_second, file_line_third);
   }
   std::cout << "here" << std::endl;
 
   ThreadPool threads_pool(kInitialThreadsCount);
   while (true) {
     auto query = queue_of_GET_queries.dequeue();
-    std::string html_with_login = html;
-    std::stringstream strstream;
-    strstream << "<div id=\"your_login\" class=\"";
-    strstream << current_free_login;
-    strstream << "\"></div>\n";
-    html_with_login.append(strstream.str());
-    html_with_login.append(file_line);
-    std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
-    clients_.emplace_back(query.sock, clients_.end(), TClient::SHIPPING);
-    Clients::iterator new_player_iter = --clients_.end();
-    login_to_iterator_map[current_free_login - 100] = new_player_iter;
-    ++current_free_login;
+    if (query.message.find("GET / HTTP") != std::string::npos) {
+      std::string html_with_login = html;
+      std::stringstream strstream;
+      strstream << "\n<div id=\"your_login\" class=\"";
+      strstream << current_free_login;
+      strstream << "\"></div>\n<div>";
+      strstream << current_free_login <<"</div>";
+      html_with_login.append(strstream.str());
+      html_with_login.append(file_line);
+      html_with_login.append(file_line_second);
+      std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
+      clients_.emplace_back(query.sock, clients_.end(), TClient::SHIPPING);
+      Clients::iterator new_player_iter = --clients_.end();
+      login_to_iterator_map[current_free_login - 100] = new_player_iter;
+      ++current_free_login;
 //    char buf[1024] = "";
-    std::cout << "gere" << std::endl;
-    clients_.back().PrepareMessage(html_with_login);
-    clients_.back().SendMessages();
-    std::cout << "tere" << std::endl;
+      std::cout << "gere" << std::endl;
+      clients_.back().PrepareMessage(html_with_login);
+      clients_.back().SendMessages();
+      std::cout << "tere" << std::endl;
 
-    if (clients_.size() > 1) {
-      Clients::iterator maybe_free_player_iter = --(--clients_.end());
-      if (IsFree(maybe_free_player_iter)) {
-        ConnectTwoClients(maybe_free_player_iter, new_player_iter);
+      if (clients_.size() > 1) {
+        Clients::iterator maybe_free_player_iter = --(--clients_.end());
+        if (IsFree(maybe_free_player_iter)) {
+          ConnectTwoClients(maybe_free_player_iter, new_player_iter);
+        }
       }
+      list_mutex_wrapper.unlock();
+      auto future = threads_pool.enqueue([this, &new_player_iter] () {
+        RecvLoop(new_player_iter);
+      });
+    } else {
+      char okk_message[] =
+          "HTTP/1.1 200 OK\nContent-Length: 3\nContent-Type: text/html\n\nOKK";
+      send(query.sock, okk_message, sizeof(okk_message), 0);
     }
-    list_mutex_wrapper.unlock();
-    auto future = threads_pool.enqueue([this, &new_player_iter] () {
-      RecvLoop(new_player_iter);
-    });
   }
 }
 
