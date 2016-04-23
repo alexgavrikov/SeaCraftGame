@@ -130,28 +130,35 @@ void Server::LoopOfSendingHTML() {
 bool Server::LoopOfListenToOneSocket(int socket_i_listen) {
   while (true) {
     char buf[100000] = "";
+    std::cout <<"ff"<<std::endl;
     int size = recv(socket_i_listen, buf, sizeof(buf), 0);
+    std::cout <<"gg"<<std::endl;
     if (size <= 0) {
       close(socket_i_listen);
       return false;
     }
     std::string message_with_headers(buf);
-    if (message_with_headers.find("GET") != std::string::npos) {
+    if (message_with_headers.substr(0, 3) == "GET") {
       queue_of_GET_queries.enqueue(QueryAndSocket(message_with_headers,
                                                   socket_i_listen));
     } else {
       //Skipping HTTP header, its end is indicated by an empty line
       const char* buf_ptr = buf;
+    std::cout <<"hh"<<std::endl;
       for (buf_ptr += 2, size -= 2;
           size > 0 && (*(buf_ptr - 1) != '\n' || *(buf_ptr - 2) != '\n');
           ++buf_ptr, --size) {
       }
+    std::cout <<"ee"<<socket_i_listen<<message_with_headers<<"ee"<<std::endl;
       std::string message_itself(buf_ptr);
+    std::cout <<"eee"<<message_itself<<"eee"<<std::endl;
       int login_end_pos = message_itself.find(':');
+    std::cout <<"q"<<login_end_pos<<"q"<<std::endl;
       std::stringstream ss;
       ss << message_itself.substr(login_end_pos - 3, 3);
       int login;
       ss >> login;
+      std::cout <<"dd"<<login<<"dd"<<std::endl;
       auto client_iterator = login_to_iterator_map[login - 100];
       client_iterator->queue_of_POST_queries_from_client.enqueue(QueryAndSocket(std::string(message_itself,
                                                                                             4),
