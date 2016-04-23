@@ -11,9 +11,10 @@
 #endif
 
 #include "server.h"
-#include "thread_pool.h"
 #include <iostream>
 #include <fstream>
+#include "thread_pool.h"
+#include "thread_safe_print.h"
 
 bool Server::ResolveHost(const std::string &host, int &addr) {
   hostent *ent = gethostbyname(host.c_str());
@@ -47,66 +48,46 @@ void Server::Bind(int port, const std::string &host) {
     throw std::runtime_error("can't start listening");
 }
 
-static std::mutex mut;
-
 void Server::AcceptLoop() {
   static constexpr size_t kInitialThreadsCount = 2;
   std::string html;
-  html.reserve(1000000);
   std::ifstream html_file("../html/index.html", std::ios_base::binary);
-  std::string tmp;
-//  size_t counter = 0;
-//  char las_s;
-  while (std::getline(html_file, tmp,'\r')) {
-//    tmp = "aaa";
-//    const char* buf = tmp.c_str();
-//    las_s = tmp.back();
-//    tmp.pop_back();
-
-    html = html + tmp;
-//    std::cout << counter << std::endl;
-//    std::cout << tmp.size() << std::endl;
-//    std::cout << tmp << std::endl;
-//    std::cout << counter << std::endl;
-//    std::cout << html << std::endl;
-//    ++counter;
+  std::string file_line;
+  while (std::getline(html_file, file_line, '\r')) {
+    html.append(file_line);
   }
-//  html.push_back(las_s);
-//  std::cout << "weg" << std::endl;
-//  std::cout << html.c_str() << std::endl;
-//  std::cout << "weg" << std::endl;
-//  std::cout << html << std::endl;
-//  std::cout << "weg" << std::endl;
 
   ThreadPool threads_pool(kInitialThreadsCount);
   while (true) {
-    // std::cout << "main: " << "start while-iteraton" << std::endl;
     int sock = accept(listener_socket_holder_->GetSocket(),
                       nullptr,
                       nullptr);
     if (sock < 0) {
       std::cout << "can't bind" << std::endl;
     } else {
-      mut.lock();
-      std::cout << "    Socket came: " << sock << std::endl;
-      std::cout <<std::endl;
+      std::stringstream debugging_output;
+      debugging_output << "    Socket came: " << sock << std::endl
+          << std::endl;
+      ThreadSafePrint(debugging_output);
       std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
       clients_.emplace_back(sock, clients_.end(), TClient::SHIPPING);
-      char buf[1024];
-      int res = recv(sock, buf, sizeof(buf), 0);
-      std::cout << "master received from socket: " << sock << " message " << buf
+      char buf[1024] = "";
+      std::stringstream debugging_output2;
+      debugging_output2 << "before receiving " << sock << " message " << buf
           << std::endl;
-      std::cout <<"END OF MESSAGE"<<std::endl;
-      std::cout <<std::endl;
+      ThreadSafePrint(debugging_output2);
+      int res = recv(sock, buf, sizeof(buf), 0);
+      std::stringstream debugging_output3;
+      debugging_output3 << "master received from socket: " << sock
+          << " message " << buf << std::endl;
+      debugging_output3 << "END OF MESSAGE" << std::endl << std::endl;
+      ThreadSafePrint(debugging_output3);
       clients_.back().PrepareMessage(html);
-  std::cout << "Master sends to socket:" << sock <<" message: "<<std::endl;
+      std::stringstream debugging_output4;
+      debugging_output4 << "Master sends to socket:" << sock << " message: "
+          << std::endl;
+      ThreadSafePrint(debugging_output4);
       clients_.back().SendMessages();
-  std::cout << "END OF MESSAGE" << std::endl;
-      std::cout <<std::endl;
-      mut.unlock();
-//      strcat(html, "4");
-      // As for wrapping-routine, I suppose it will be inside function TClient::SendMessages()
-      // CODE HERE
 
       Clients::iterator new_player_iter = --clients_.end();
       if (clients_.size() > 1) {
@@ -125,22 +106,26 @@ void Server::AcceptLoop() {
 
 // Returns true if connection was closed by handler, false if connection was closed by peer
 bool Server::RecvLoop(Clients::iterator client) {
-  // std::cout << "  non-main: " << "just started" << std::endl;
-
   while (true) {
-    // std::cout << "  non-main: " << "new while-iteration" << std::endl;
-    char buf[1024];
+    std::stringstream debugging_output;
+    char buf[100000] = "";
+    debugging_output << "old buf from socket " << client->client_socket_
+        << ": " << buf << std::endl;
+    ThreadSafePrint(debugging_output);
     int res = recv(client->client_socket_, buf, sizeof(buf), 0);
-    mut.lock();
-    std::cout << "daughter received from socket:" << client->client_socket_ << " message: "
+      std::stringstream debugging_output2;
+    debugging_output2 << "daughter received " << res
+        << " bytes from socket:" << client->client_socket_ << " message: "
         << buf << std::endl;
-    std::cout <<"END OF MESSAGE"<<std::endl;
-    std::cout <<std::endl;
-    mut.unlock();
-    // std::cout << "  non-main: " << "received" << std::endl;
+    debugging_output2 << "END OF MESSAGE" << std::endl << std::endl;
+    ThreadSafePrint(debugging_output2);
     if (res <= 0) {
-      std::cout << "disconnect" << client->client_socket_ << std::endl;
+      std::stringstream debugging_output3;
+      debugging_output3 << "disconnect" << client->client_socket_
+          << std::endl;
+      ThreadSafePrint(debugging_output3);
       Disconnect(client);
+//      client.CloseSocket();
       return false;
     }
     ParseData(buf, res, client);
@@ -163,28 +148,16 @@ void Server::ParseData(char* buf,
   }
 
   if (RecieveShips(buf, size, client_iterator)) {
-    mut.lock();
     client_iterator->SendMessages();
-    std::cout <<"END OF MESSAGE"<<std::endl;
-    std::cout <<std::endl;
-    mut.unlock();
     return;
   }
 
   if (RecieveStep(buf, size, client_iterator)) {
-    mut.lock();
     client_iterator->SendMessages();
-    std::cout <<"END OF MESSAGE"<<std::endl;
-    std::cout <<std::endl;
-    mut.unlock();
     return;
   }
 
-    mut.lock();
   client_iterator->SendMessages();
-    std::cout <<"END OF MESSAGE"<<std::endl;
-    std::cout <<std::endl;
-    mut.unlock();
 }
 
 void Server::ConnectTwoClients(Clients::iterator free_player_iter_first,
