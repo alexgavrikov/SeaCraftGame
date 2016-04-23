@@ -1,6 +1,6 @@
 kTableSize = 10
 kStatus = 'shipping' // 'enemy_turn', 'my_turn', 'waiting'
-kPostMsg = '-----------------------PRIVET-------------------------'
+kPostMsg = ''
 
 var fillTable = function(elem) {
     var html = ''
@@ -103,7 +103,7 @@ var makePost = function() {
         }).error(function() {
             console.log('error')
         }).always(function() {
-            kPostMsg = '-----------------------PRIVET-------------------------'
+            kPostMsg = ''
         })
     }, 2000) 
     
