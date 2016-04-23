@@ -11,6 +11,7 @@
 #endif
 
 #include "server.h"
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include "thread_pool.h"
@@ -49,15 +50,11 @@ void Server::Bind(int port, const std::string &host) {
 }
 
 void Server::AcceptLoop() {
-  static constexpr size_t kInitialThreadsCount = 2;
-  std::string html;
-  std::ifstream html_file("../html/index.html", std::ios_base::binary);
-  std::string file_line;
-  while (std::getline(html_file, file_line, '\r')) {
-    html.append(file_line);
-  }
-
+  static constexpr size_t kInitialThreadsCount = 3;
   ThreadPool threads_pool(kInitialThreadsCount);
+  threads_pool.enqueue([this] () {
+    LoopOfSendingHTML();
+  });
   while (true) {
     int sock = accept(listener_socket_holder_->GetSocket(),
                       nullptr,
@@ -65,41 +62,89 @@ void Server::AcceptLoop() {
     if (sock < 0) {
       std::cout << "can't bind" << std::endl;
     } else {
-      std::stringstream debugging_output;
-      debugging_output << "    Socket came: " << sock << std::endl
-          << std::endl;
-      ThreadSafePrint(debugging_output);
-      std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
-      clients_.emplace_back(sock, clients_.end(), TClient::SHIPPING);
-      char buf[1024] = "";
-      std::stringstream debugging_output2;
-      debugging_output2 << "before receiving " << sock << " message " << buf
-          << std::endl;
-      ThreadSafePrint(debugging_output2);
-      int res = recv(sock, buf, sizeof(buf), 0);
-      std::stringstream debugging_output3;
-      debugging_output3 << "master received from socket: " << sock
-          << " message " << buf << std::endl;
-      debugging_output3 << "END OF MESSAGE" << std::endl << std::endl;
-      ThreadSafePrint(debugging_output3);
-      clients_.back().PrepareMessage(html);
-      std::stringstream debugging_output4;
-      debugging_output4 << "Master sends to socket:" << sock << " message: "
-          << std::endl;
-      ThreadSafePrint(debugging_output4);
-      clients_.back().SendMessages();
-
-      Clients::iterator new_player_iter = --clients_.end();
-      if (clients_.size() > 1) {
-        Clients::iterator maybe_free_player_iter = --(--clients_.end());
-        if (IsFree(maybe_free_player_iter)) {
-          ConnectTwoClients(maybe_free_player_iter, new_player_iter);
-        }
-      }
-      list_mutex_wrapper.unlock();
-      auto future = threads_pool.enqueue([this, &new_player_iter] () {
-        RecvLoop(new_player_iter);
+      threads_pool.enqueue([this, sock] () {
+        LoopOfListenToOneSocket(sock);
       });
+    }
+  }
+}
+
+void Server::LoopOfSendingHTML() {
+  static constexpr size_t kInitialThreadsCount = 2;
+  std::string html;
+  std::ifstream html_file("../html/index.html", std::ios_base::binary);
+  std::string file_line;
+  std::string file_line_second;
+  std::getline(html_file, file_line, '\r');
+  while (std::getline(html_file, file_line_second, '\r')) {
+    html.append(file_line);
+    file_line = file_line_second;
+  }
+  std::cout << "here" << std::endl;
+
+  ThreadPool threads_pool(kInitialThreadsCount);
+  while (true) {
+    auto query = queue_of_GET_queries.dequeue();
+    std::string html_with_login = html;
+    std::stringstream strstream;
+    strstream << "<div id=\"your_login\" class=\"";
+    strstream << current_free_login;
+    strstream << "\"></div>\n";
+    html_with_login.append(strstream.str());
+    html_with_login.append(file_line);
+    std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
+    clients_.emplace_back(query.sock, clients_.end(), TClient::SHIPPING);
+    Clients::iterator new_player_iter = --clients_.end();
+    login_to_iterator_map[current_free_login - 100] = new_player_iter;
+    ++current_free_login;
+//    char buf[1024] = "";
+    std::cout << "gere" << std::endl;
+    clients_.back().PrepareMessage(html_with_login);
+    clients_.back().SendMessages();
+    std::cout << "tere" << std::endl;
+
+    if (clients_.size() > 1) {
+      Clients::iterator maybe_free_player_iter = --(--clients_.end());
+      if (IsFree(maybe_free_player_iter)) {
+        ConnectTwoClients(maybe_free_player_iter, new_player_iter);
+      }
+    }
+    list_mutex_wrapper.unlock();
+    auto future = threads_pool.enqueue([this, &new_player_iter] () {
+      RecvLoop(new_player_iter);
+    });
+  }
+}
+
+bool Server::LoopOfListenToOneSocket(int socket_i_listen) {
+  while (true) {
+    char buf[100000] = "";
+    int size = recv(socket_i_listen, buf, sizeof(buf), 0);
+    if (size <= 0) {
+      close(socket_i_listen);
+      return false;
+    }
+    std::string message_with_headers(buf);
+    if (message_with_headers.find("GET") != std::string::npos) {
+      queue_of_GET_queries.enqueue(QueryAndSocket(message_with_headers,
+                                                  socket_i_listen));
+    } else {
+      //Skipping HTTP header, its end is indicated by an empty line
+      const char* buf_ptr = buf;
+      for (buf_ptr += 2, size -= 2;
+          size > 0 && (*(buf_ptr - 1) != '\n' || *(buf_ptr - 2) != '\n');
+          ++buf_ptr, --size) {
+      }
+      std::string message_itself(buf_ptr);
+      int login_end_pos = message_itself.find(':');
+      std::stringstream ss;
+      ss << message_itself.substr(login_end_pos - 3, 3);
+      int login;
+      ss >> login;
+      auto client_iterator = login_to_iterator_map[login - 100];
+      client_iterator->queue_of_POST_queries_from_client.enqueue(QueryAndSocket(std::string(message_itself,
+                                                                                            4),
+                                                                                socket_i_listen));
     }
   }
 }
@@ -107,45 +152,20 @@ void Server::AcceptLoop() {
 // Returns true if connection was closed by handler, false if connection was closed by peer
 bool Server::RecvLoop(Clients::iterator client) {
   while (true) {
-    std::stringstream debugging_output;
-    char buf[100000] = "";
-    debugging_output << "old buf from socket " << client->client_socket_
-        << ": " << buf << std::endl;
-    ThreadSafePrint(debugging_output);
-    int res = recv(client->client_socket_, buf, sizeof(buf), 0);
-      std::stringstream debugging_output2;
-    debugging_output2 << "daughter received " << res
-        << " bytes from socket:" << client->client_socket_ << " message: "
-        << buf << std::endl;
-    debugging_output2 << "END OF MESSAGE" << std::endl << std::endl;
-    ThreadSafePrint(debugging_output2);
-    if (res <= 0) {
-      std::stringstream debugging_output3;
-      debugging_output3 << "disconnect" << client->client_socket_
-          << std::endl;
-      ThreadSafePrint(debugging_output3);
-      Disconnect(client);
-//      client.CloseSocket();
-      return false;
-    }
-    ParseData(buf, res, client);
+    auto query = client->queue_of_POST_queries_from_client.dequeue();
+    client->client_socket_ = query.sock;
+    ParseData(query.message.c_str(), query.message.size(), client);
   }
 
   return true;
 }
 
-void Server::ParseData(char* buf,
+void Server::ParseData(const char* buf,
                        int size,
                        Clients::iterator client_iterator) {
   // Functions Server::RecieveShips(...) and Server::RecieveStep(...) contain only preparing messages 
   // (pushing them into the clients' messages_queues by calling TClient::PrepareMessage(...)). And after
   // that we send messages by calling TClient::SendMessages()
-
-  //Skipping HTTP header, its end is indicated by an empty line
-  for (buf += 2, size -= 2;
-      size > 0 && (*(buf - 1) != '\n' || *(buf - 2) != '\n');
-      ++buf, --size) {
-  }
 
   if (RecieveShips(buf, size, client_iterator)) {
     client_iterator->SendMessages();
@@ -184,10 +204,9 @@ void Server::Disconnect(Clients::iterator client_iterator) {
   } else {
     clients_.erase(client_iterator);
   }
-
 }
 
-bool Server::RecieveShips(char* buf,
+bool Server::RecieveShips(const char* buf,
                           int size,
                           Clients::iterator client_iterator) {
   if (client_iterator->status_ != TClient::SHIPPING) {
@@ -250,7 +269,7 @@ bool Server::RecieveShips(char* buf,
   return true;
 }
 
-bool Server::RecieveStep(char* buf,
+bool Server::RecieveStep(const char* buf,
                          int size,
                          Clients::iterator client_iterator) {
   if (client_iterator->status_ != TClient::MAKING_STEP) {

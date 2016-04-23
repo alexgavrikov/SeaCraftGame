@@ -34,11 +34,11 @@ void TClient::SendMessages() {
     sz -= res;
   }
 
-  std::stringstream debugging_output;
-  debugging_output << whole_message.str();
-  debugging_output << std::endl << "END OF MESSAGE" << std::endl
-      << std::endl;
-  ThreadSafePrint(debugging_output);
+//  std::stringstream debugging_output;
+//  debugging_output << whole_message.str();
+//  debugging_output << std::endl << "END OF MESSAGE" << std::endl
+//      << std::endl;
+//  ThreadSafePrint(debugging_output);
 }
 
 void TClient::PrepareMessage(const std::string& message) {

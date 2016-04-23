@@ -26,6 +26,7 @@
 #include <atomic>
 #include <queue>
 #include <algorithm>
+#include "queue_cond.h"
 
 class ThreadSafeQueue {
 public:
@@ -117,6 +118,7 @@ private:
   // in section with changing statuses from WAITING to WAITING_STEP and MAKING_STEP.
   // Only one thread should do this section.
   std::mutex mutex_for_starting_game;bool gone = false;
+  QueueWithCondVar<QueryAndSocket> queue_of_POST_queries_from_client;
 };
 
 #endif /* TCLIENT_H_ */

@@ -18,7 +18,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdio>
-
+#include "queue_cond.h"
 #include "TClient.h"
 
 class Server {
@@ -89,12 +89,14 @@ private:
 
   // Returns true if connection was closed by handler, false if connection was closed by peer
   bool RecvLoop(Clients::iterator client);
-  void ParseData(char* buf, int size, Clients::iterator client_iterator);
+  void LoopOfSendingHTML();
+  bool LoopOfListenToOneSocket(int socket_i_listen);
+  void ParseData(const char* buf, int size, Clients::iterator client_iterator);
   void Disconnect(Clients::iterator client_iterator);
-  bool RecieveShips(char* buf,
+  bool RecieveShips(const char* buf,
                     int size,
                     Clients::iterator client_iterator);
-  bool RecieveStep(char* buf,
+  bool RecieveStep(const char* buf,
                    int size,
                    Clients::iterator client_iterator);
   bool IsFree(Clients::iterator client_iterator) const;
@@ -102,4 +104,9 @@ private:
   TSocketPtr listener_socket_holder_;
   Clients clients_;
   std::mutex list_mutex_;
+  Clients::iterator login_to_iterator_map[900];
+  // Logins are in range from 100 to 999. To get client_iterator from login:
+  // login_to_iterator_map[login - 100]
+  size_t current_free_login = 100;
+  QueueWithCondVar<QueryAndSocket> queue_of_GET_queries;
 };
