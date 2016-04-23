@@ -8,21 +8,21 @@
 #include "TClient.h"
 #include <iostream>
 #include <sstream>
+#include "thread_safe_print.h"
 
 void TClient::SendMessages() {
-
   std::stringstream whole_message;
-
   whole_message << "HTTP/1.1 200 OK\nContent-Length: ";
-  std::string message;
+
+  std::string message_itself;
   if (messages_queue.empty()) {
-    message = "OKK";
+    message_itself = "OKK";
   } else {
-    message = messages_queue.dequeue();
+    message_itself = messages_queue.dequeue();
   }
-  whole_message << message.size();
+  whole_message << message_itself.size();
   whole_message << "\nContent-Type: text/html\n\n";
-  whole_message << message;
+  whole_message << message_itself;
 
   const char* data = whole_message.str().c_str();
   size_t sz = whole_message.str().size();
@@ -33,7 +33,12 @@ void TClient::SendMessages() {
     data += res;
     sz -= res;
   }
-  std::cout << whole_message.str() << std::endl;
+
+  std::stringstream debugging_output;
+  debugging_output << whole_message.str();
+  debugging_output << std::endl << "END OF MESSAGE" << std::endl
+      << std::endl;
+  ThreadSafePrint(debugging_output);
 }
 
 void TClient::PrepareMessage(const std::string& message) {
