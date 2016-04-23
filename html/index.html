@@ -26,7 +26,6 @@
     <script type="text/javascript">
 kTableSize = 10
 kStatus = 'shipping' // 'enemy_turn', 'my_turn', 'waiting'
-kPostMsg = ''
 kLogin = ''
 
 var fillTable = function(elem) {
@@ -143,7 +142,12 @@ $(document).ready(function() {
     fillTable($('#enemy_table'))
     setStatus('shipping')
     kLogin = $('#your_login').attr('class')
-    makePost()
+    setInterval(function() {
+        $.post('/', kLogin + ':' + '', function(data) {
+            console.log(data)
+            analiseAnswer(data) // TODO delete comment
+        })
+    }, 10000)
 })
 
 $(document).on('click', '#my_table td', function() {
@@ -163,10 +167,9 @@ $(document).on('click', '#enemy_table td', function() {
             x = $(this).attr('id').split('_')[1]
             y = $(this).attr('id').split('_')[2]
             setStatus('enemy_turn')
-            //$.post('/', 'turn:' + x + ':' + y, function(data) {
-            //    analiseAnswer(data)
-            //}
-            kPostMsg = 'turn:' + x + ':' + y
+            $.post('/', kLogin + ':turn:' + x + ':' + y, function(data) {
+                analiseAnswer(data)
+            })
         } else {
             alert('You must not press here')
         }
@@ -189,10 +192,9 @@ $(document).on('click', '#send_ships', function() {
         }
     }
     
-    //$.post('/', '', function(data) {
-    //    analiseAnswer(data)
-    //})
-    kPostMsg = ships_msg // TODO ships_msg
+    $.post('/', kLogin + ':' + ships_msg, function(data) {
+        analiseAnswer(data)
+    })
 })
     </script>
 </head>
