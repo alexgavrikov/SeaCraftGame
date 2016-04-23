@@ -34,7 +34,7 @@ var fillTable = function(elem) {
     for (var i = 0; i < kTableSize; ++i) {
         html += '<tr>'
         for (var j = 0; j < kTableSize; ++j) {
-           html += '<td id="' + base_id + '_' + i + '_' + j + '" state="free"></td>' 
+           html += '<td id="' + base_id + '_' + (i + 1) + '_' + (j + 1) + '" state="free"></td>' 
         }
         html += '</tr>\n'
     }
@@ -167,7 +167,7 @@ $(document).on('click', '#enemy_table td', function() {
             x = $(this).attr('id').split('_')[1]
             y = $(this).attr('id').split('_')[2]
             setStatus('enemy_turn')
-            $.post('/', kLogin + ':turn:' + x + ':' + y, function(data) {
+            $.post('/', kLogin + ':step:' + x + ':' + y, function(data) {
                 analiseAnswer(data)
             })
         } else {
