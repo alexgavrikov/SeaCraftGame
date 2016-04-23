@@ -1,6 +1,7 @@
 kTableSize = 10
 kStatus = 'shipping' // 'enemy_turn', 'my_turn', 'waiting'
 kPostMsg = ''
+kLogin = ''
 
 var fillTable = function(elem) {
     var html = ''
@@ -95,7 +96,7 @@ var analiseAnswer = function(data) {
 
 var makePost = function() {
     setInterval(function() {
-        $.post('/', kPostMsg, function(data) {
+        $.post('/', kLogin + ':' + kPostMsg, function(data) {
             console.log(data)
             analiseAnswer(data) // TODO delete comment
         }).done(function() {
@@ -114,6 +115,7 @@ $(document).ready(function() {
     fillTable($('#my_table'))
     fillTable($('#enemy_table'))
     setStatus('shipping')
+    kLogin = $('#your_login').attr('class')
     makePost()
 })
 
