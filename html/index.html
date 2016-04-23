@@ -75,8 +75,8 @@ var analiseAnswer = function(data) {
         }
         if (data.split(':')[1] == 'kill') {
             coordsToTd(name, data.split(':')[2], data.split(':')[3]).css('background_color', 'red').attr('state', 'ship')
-                for (var i = 0; i < kTableSize; ++i) {
-                    for (var j = 0; j < kTableSize; ++j) {
+                for (var i = 1; i < kTableSize + 1; ++i) {
+                    for (var j = 1; j < kTableSize + 1; ++j) {
                         if (coordsToTd(name, i, j).attr('state') == 'free') {
                             if ((i > 0 && coordsToTd(name, i - 1, j).attr('state') == 'ship') ||
                                     (i < kTableSize - 1 && coordsToTd(name, i + 1, j).attr('state') == 'ship') ||
@@ -183,8 +183,8 @@ $(document).on('click', '#send_ships', function() {
     }
     setStatus('waiting')
     ships_msg = 'shipping:'
-    for (var i = 0; i < kTableSize; ++i) {
-        for (var j = 0; j < kTableSize; ++j) {
+    for (var i = 1; i < kTableSize + 1; ++i) {
+        for (var j = 1; j < kTableSize + 1; ++j) {
             if (coordsToTd('my', i, j).attr('state') == 'ship')
                 ships_msg += '1'
             else
