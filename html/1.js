@@ -35,6 +35,7 @@ var setStatus = function(str) {
 
 var analiseAnswer = function(data) {
     name = data.split(':', 0)
+    concole.log('in analise ' + name)
     if (name == 'field1' || name == 'field2') {
         if (name == 'field1')
             name = 'my'
