@@ -77,12 +77,15 @@ void Server::LoopOfSendingHTML() {
   std::string file_line;
   std::string file_line_second;
   std::string file_line_third;
+  std::string file_line_fourth;
   std::getline(html_file, file_line, '\r');
   std::getline(html_file, file_line_second, '\r');
-  while (std::getline(html_file, file_line_third, '\r')) {
+  std::getline(html_file, file_line_third, '\r');
+  while (std::getline(html_file, file_line_fourth, '\r')) {
     html.append(file_line);
     std::swap(file_line, file_line_second);
     std::swap(file_line_second, file_line_third);
+    std::swap(file_line_fourth, file_line_third);
   }
   std::cout << "here" << std::endl;
 
@@ -99,6 +102,7 @@ void Server::LoopOfSendingHTML() {
       html_with_login.append(strstream.str());
       html_with_login.append(file_line);
       html_with_login.append(file_line_second);
+      html_with_login.append(file_line_third);
       std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
       clients_.emplace_back(query.sock, clients_.end(), TClient::SHIPPING);
       Clients::iterator new_player_iter = --clients_.end();
