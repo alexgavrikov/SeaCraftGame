@@ -62,6 +62,7 @@ void Server::AcceptLoop() {
     if (sock < 0) {
       std::cout << "can't bind" << std::endl;
     } else {
+      std::cout <<"                   "<<sock<<std::endl;
       threads_pool.enqueue([this, sock] () {
         LoopOfListenToOneSocket(sock);
       });
@@ -128,8 +129,9 @@ void Server::LoopOfSendingHTML() {
 }
 
 bool Server::LoopOfListenToOneSocket(int socket_i_listen) {
+      std::cout <<"                   ::"<<socket_i_listen<<std::endl;
   while (true) {
-    char buf[100000] = "\0";
+    char buf[100000] = "";
     std::cout <<"ff"<<std::endl;
     int size = recv(socket_i_listen, buf, sizeof(buf), 0);
     std::stringstream ss;
@@ -158,6 +160,7 @@ bool Server::LoopOfListenToOneSocket(int socket_i_listen) {
     std::cout <<"q"<<login_end_pos<<"q"<<std::endl;
       std::stringstream ss;
       ss << message_itself.substr(login_end_pos - 3, 3);
+    std::cout <<"gggggggggggg"<<std::endl;
       int login;
       ss >> login;
       std::cout <<"dd"<<login<<"dd"<<std::endl;
