@@ -129,9 +129,12 @@ void Server::LoopOfSendingHTML() {
 
 bool Server::LoopOfListenToOneSocket(int socket_i_listen) {
   while (true) {
-    char buf[100000] = "";
+    char buf[100000] = "\0";
     std::cout <<"ff"<<std::endl;
     int size = recv(socket_i_listen, buf, sizeof(buf), 0);
+    std::stringstream ss;
+    ss<<"ee"<<socket_i_listen<<buf<<"ee"<<std::endl;
+    ThreadSafePrint(ss);
     std::cout <<"gg"<<std::endl;
     if (size <= 0) {
       close(socket_i_listen);
@@ -149,7 +152,6 @@ bool Server::LoopOfListenToOneSocket(int socket_i_listen) {
           size > 0 && (*(buf_ptr - 1) != '\n' || *(buf_ptr - 2) != '\n');
           ++buf_ptr, --size) {
       }
-    std::cout <<"ee"<<socket_i_listen<<message_with_headers<<"ee"<<std::endl;
       std::string message_itself(buf_ptr);
     std::cout <<"eee"<<message_itself<<"eee"<<std::endl;
       int login_end_pos = message_itself.find(':');
