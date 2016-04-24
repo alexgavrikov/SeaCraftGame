@@ -9,17 +9,16 @@
 #include <unistd.h>
 #endif
 
-#include <memory>
-#include <string>
-#include <exception>
-#include <list>
-#include <mutex>
-#include <thread>
-#include <iostream>
 #include <cstring>
 #include <cstdio>
-#include "queue_cond.h"
+#include <exception>
+#include <iostream>
+#include <list>
+#include <mutex>
+#include <string>
+#include <thread>
 #include "TClient.h"
+#include "queue_cond.h"
 
 class Server {
 private:
@@ -63,17 +62,11 @@ public:
     std::this_thread::sleep_for(std::chrono::milliseconds(milliseconds));
   }
 
-  Server()
-      : listener_socket_holder_(new TSocketHolder) {
-  }
-  Server(int sock)
-      : listener_socket_holder_(new TSocketHolder(sock)) {
-  }
+  Server() : listener_socket_holder_(new TSocketHolder) {}
+  Server(int sock) : listener_socket_holder_(new TSocketHolder(sock)) {}
   void Bind(int port, const std::string &host);
   void AcceptLoop();
-  int GetSocket() const {
-    return listener_socket_holder_->GetSocket();
-  }
+  int GetSocket() const { return listener_socket_holder_->GetSocket(); }
 
 private:
   using TSocketPtr = std::shared_ptr<TSocketHolder>;
@@ -82,10 +75,6 @@ private:
   static bool ResolveHost(const std::string &host, int &addr);
   static void ConnectTwoClients(Clients::iterator free_player_iter_first,
                          Clients::iterator free_player_iter_second);
-  static void ConcatenateAndSend(Clients::iterator client_iterator,
-                                 char* message_for_client,
-                                 char* message_for_opponent,
-                                 char* message_ending);
 
   // Returns true if connection was closed by handler, false if connection was closed by peer
   bool RecvLoop(Clients::iterator client);

@@ -20,9 +20,7 @@ void TClient::SendMessages() {
   } else {
     message_itself = messages_queue.dequeue();
   }
-  whole_message << message_itself.size();
-  whole_message << "\nContent-Type: text/html\n\n";
-  whole_message << message_itself;
+  whole_message << message_itself.size() << "\nContent-Type: text/html\n\n" << message_itself;
 
   const char* data = whole_message.str().c_str();
   size_t sz = whole_message.str().size();

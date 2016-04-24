@@ -12,7 +12,6 @@
 
 #include "server.h"
 #include <cstdlib>
-#include <iostream>
 #include <fstream>
 #include "thread_pool.h"
 #include "thread_safe_print.h"
@@ -39,7 +38,6 @@ void Server::Bind(int port, const std::string &host) {
     address.sin_addr.s_addr = addr;
   } else {
     address.sin_addr.s_addr = INADDR_ANY;
-    std::cout << INADDR_ANY << std::endl;
   }
   if (bind(listener_socket_holder_->GetSocket(),
            reinterpret_cast<sockaddr*>(&address),
@@ -62,7 +60,7 @@ void Server::AcceptLoop() {
     if (sock < 0) {
       std::cout << "can't bind" << std::endl;
     } else {
-      std::cout <<"                   "<<sock<<std::endl;
+//      std::cout << "                   " << sock << std::endl;
       threads_pool.enqueue([this, sock] () {
         LoopOfListenToOneSocket(sock);
       });
@@ -74,10 +72,7 @@ void Server::LoopOfSendingHTML() {
   static constexpr size_t kInitialThreadsCount = 2;
   std::string html;
   std::ifstream html_file("../html/index.html", std::ios_base::binary);
-  std::string file_line;
-  std::string file_line_second;
-  std::string file_line_third;
-  std::string file_line_fourth;
+  std::string file_line, file_line_second, file_line_third, file_line_fourth;
   std::getline(html_file, file_line, '\r');
   std::getline(html_file, file_line_second, '\r');
   std::getline(html_file, file_line_third, '\r');
@@ -87,32 +82,26 @@ void Server::LoopOfSendingHTML() {
     std::swap(file_line_second, file_line_third);
     std::swap(file_line_fourth, file_line_third);
   }
-  std::cout << "here" << std::endl;
+//  std::cout << "here" << std::endl;
 
   ThreadPool threads_pool(kInitialThreadsCount);
   while (true) {
     auto query = queue_of_GET_queries.dequeue();
     if (query.message.find("GET / HTTP") != std::string::npos) {
-      std::string html_with_login = html;
       std::stringstream strstream;
-      strstream << "\n<div id=\"your_login\" class=\"";
-      strstream << current_free_login;
-      strstream << "\"></div>\n<div>";
-      strstream << current_free_login <<"</div>";
-      html_with_login.append(strstream.str());
-      html_with_login.append(file_line);
-      html_with_login.append(file_line_second);
-      html_with_login.append(file_line_third);
+      strstream << "\n<div id=\"your_login\" class=\""
+          << current_free_login << "\"></div>\n<div>" << current_free_login
+          << "</div>";
+      std::string html_with_login = html + strstream.str() + file_line
+          + file_line_second + file_line_third;
       std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
       clients_.emplace_back(query.sock, clients_.end(), TClient::SHIPPING);
       Clients::iterator new_player_iter = --clients_.end();
-      login_to_iterator_map[current_free_login - 100] = new_player_iter;
-      ++current_free_login;
-//    char buf[1024] = "";
-      std::cout << "gere" << std::endl;
+      login_to_iterator_map[current_free_login++ - 100] = new_player_iter;
+//      std::cout << "gere" << std::endl;
       clients_.back().PrepareMessage(html_with_login);
       clients_.back().SendMessages();
-      std::cout << "tere" << std::endl;
+//      std::cout << "tere" << std::endl;
 
       if (clients_.size() > 1) {
         Clients::iterator maybe_free_player_iter = --(--clients_.end());
@@ -125,23 +114,23 @@ void Server::LoopOfSendingHTML() {
         RecvLoop(new_player_iter);
       });
     } else {
-      char okk_message[] =
+      char answer_to_get_query_for_icon[] =
           "HTTP/1.1 200 OK\nContent-Length: 3\nContent-Type: text/html\n\nOKK";
-      send(query.sock, okk_message, sizeof(okk_message), 0);
+      send(query.sock, answer_to_get_query_for_icon, sizeof(answer_to_get_query_for_icon), 0);
     }
   }
 }
 
 bool Server::LoopOfListenToOneSocket(int socket_i_listen) {
-      std::cout <<"                   ::"<<socket_i_listen<<std::endl;
+//  std::cout << "                   ::" << socket_i_listen << std::endl;
   while (true) {
     char buf[100000] = "";
-    std::cout <<"ff"<<std::endl;
+//    std::cout << "ff" << std::endl;
     int size = recv(socket_i_listen, buf, sizeof(buf), 0);
-    std::stringstream ss;
-    ss<<"ee"<<socket_i_listen<<buf<<"ee"<<std::endl;
-    ThreadSafePrint(ss);
-    std::cout <<"gg"<<std::endl;
+//    std::stringstream ss;
+//    ss << "ee" << socket_i_listen << buf << "ee" << std::endl;
+//    ThreadSafePrint(ss);
+//    std::cout << "gg" << std::endl;
     if (size <= 0) {
       close(socket_i_listen);
       return false;
@@ -152,25 +141,20 @@ bool Server::LoopOfListenToOneSocket(int socket_i_listen) {
                                                   socket_i_listen));
     } else {
       //Skipping HTTP header, its end is indicated by an empty line
-      const char* buf_ptr = buf;
-    std::cout <<"hh"<<std::endl;
-      for (buf_ptr += 2, size -= 2;
-          size > 0 && (*(buf_ptr - 1) != '\n' || *(buf_ptr - 2) != '\n');
-          ++buf_ptr, --size) {
-      }
-      std::string message_itself(buf_ptr);
-    std::cout <<"eee"<<message_itself<<"eee"<<std::endl;
-      int login_end_pos = message_itself.find(':');
-    std::cout <<"q"<<login_end_pos<<"q"<<std::endl;
-      std::stringstream ss;
-      ss << message_itself.substr(login_end_pos - 3, 3);
-    std::cout <<"gggggggggggg"<<std::endl;
-      int login;
-      ss >> login;
-      std::cout <<"dd"<<login<<"dd"<<std::endl;
+//      std::cout << "hh" << std::endl;
+      std::string post_query(buf);
+//      std::cout << "gggf" << post_query << "ggg" << std::endl;
+      int begposition_of_message_itself = post_query.find("\r\n\r\n") + 4;
+//      std::cout << message_begin_pos << std::endl;
+//      std::cout << post_query.substr(message_begin_pos) << std::endl;
+      std::string message_itself(post_query.substr(begposition_of_message_itself));
+//      std::cout << "eee" << message_itself << "eee" << std::endl;
+//      std::cout << "q" << login_end_pos << "q" << std::endl;
+      size_t login = std::atoi(message_itself.substr(0, 3).c_str());
+//      std::cout << "gggggggggggg" << std::endl;
+//      std::cout << "dd" << login << "dd" << std::endl;
       auto client_iterator = login_to_iterator_map[login - 100];
-      client_iterator->queue_of_POST_queries_from_client.enqueue(QueryAndSocket(std::string(message_itself,
-                                                                                            4),
+      client_iterator->queue_of_POST_queries_from_client.enqueue(QueryAndSocket(message_itself.substr(4),
                                                                                 socket_i_listen));
     }
   }
@@ -193,6 +177,7 @@ void Server::ParseData(const char* buf,
   // Functions Server::RecieveShips(...) and Server::RecieveStep(...) contain only preparing messages 
   // (pushing them into the clients' messages_queues by calling TClient::PrepareMessage(...)). And after
   // that we send messages by calling TClient::SendMessages()
+  std::cout << "zzz" << buf << "zzz" << std::endl;
 
   if (RecieveShips(buf, size, client_iterator)) {
     client_iterator->SendMessages();
@@ -242,29 +227,31 @@ bool Server::RecieveShips(const char* buf,
 
   // Check if it is about receiving ships. if not return false
   // if yes, extracting ships from  buf into client_iterator->ships; i. e. parsing buf here
-  // message about ships has to look like: "ships:1010..000" (maybe with some HTTP-wrapping)
-  // One Hundred bits (zeros or ones) in message above! Развёртываются в двумерную таблицу:
-  // первые 10 бит - первая строка (то есть ships[0]), вторые 10 бит - вторая строка (то есть ships[1]),
-  // и так далее.
+  // message about ships has to look like: "shipping:1010..000" (maybe with some HTTP-wrapping)
+  // One Hundred bits (zeros or ones) in message above!
 
-  const int ships_message_size = 106;
+  const int ships_message_size = 109;
+//  std::cout << "gg" << size << "gg" << std::endl;
   if (size != ships_message_size) {
     return false;
   }
 
-  if (std::string(buf, 6) != "ships:") {
+  if (std::string(buf, 9) != "shipping:") {
     return false;
   }
 
   client_iterator->ships_.resize(10);
-  buf += 6;
+  buf += 9;
   for (int y_coord = 0; y_coord != 10; ++y_coord) {
     client_iterator->ships_[y_coord].resize(10);
     for (int x_coord = 0; x_coord != 10; ++x_coord) {
       if (*buf == '0') {
         client_iterator->ships_[y_coord][x_coord] = TClient::WATER;
+        ++buf;
       } else if (*buf == '1') {
+        //  std::cout << "ekjr"<<y_coord<<" "<<x_coord<<std::endl;
         client_iterator->ships_[y_coord][x_coord] = TClient::SHIP_PIECE_OK;
+        ++buf;
       } else {
         client_iterator->ships_.clear();
         return false;
@@ -272,7 +259,17 @@ bool Server::RecieveShips(const char* buf,
     }
   }
 
+//  std::cout << "ekjr"<<client_iterator->ships_[1][1]<<std::endl;
+//  std::cout << "ekjr"<<client_iterator->ships_[8][8]<<std::endl;
+//  for (int y = 0; y != 10; ++y) {
+//    for (int x = 0; x != 10; ++x) {
+//      std::cout << client_iterator->ships_[y][x];
+//    }
+//    std::cout << std::endl;
+//  }
+
   if (client_iterator->CorrectShips()) {
+//    std::cout <<"wkgje"<<std::endl;
     client_iterator->PrepareMessage("shipping:ok");
     client_iterator->status_ = TClient::WAITING;
     if (client_iterator->opponent_ != clients_.end()) {
@@ -290,6 +287,7 @@ bool Server::RecieveShips(const char* buf,
       client_iterator->opponent_->mutex_for_starting_game.unlock();
     }
   } else {
+//    std::cout << "       hhheerrree" << std::endl;
     client_iterator->PrepareMessage("shipping:wrong");
   }
 
@@ -360,52 +358,51 @@ bool Server::RecieveStep(const char* buf,
     }
   }
 
-  size_t result_of_shooting =
-      client_iterator->opponent_->GetShooting(x_coord, y_coord);
+//  std::cout << "x_coord: " << x_coord << std::endl;
+//  std::cout << "y_coord: " << y_coord << std::endl;
+//  std::cout << ": " << client_iterator->opponent_->ships_[y_coord-1][x_coord-1] << std::endl;
+//  std::cout << ": " << client_iterator->opponent_->ships_[y_coord-2][x_coord-1] << std::endl;
+//  std::cout << ": " << client_iterator->opponent_->ships_[y_coord-1][x_coord] << std::endl;
+//  std::cout << ": " << client_iterator->opponent_->ships_[y_coord][x_coord-1] << std::endl;
+//  std::cout << ": " << client_iterator->opponent_->ships_[y_coord-1][x_coord-2] << std::endl;
+  size_t result_of_shooting = client_iterator->opponent_->GetShooting(x_coord, y_coord);
+//  std::cout << "result of shooting: " << result_of_shooting << std::endl;
 
-  char message_ending[7];
-  sprintf(message_ending, ":%d:%d", x_coord, y_coord);
+  std::stringstream stream_for_message_ending;
+  stream_for_message_ending << y_coord << ":" << x_coord << std::endl;
 
   switch (result_of_shooting) {
   case TClient::MISS: {
-    char message_for_client[12] = "field2:miss";
-    char message_for_opponent[12] = "field1:miss";
-    ConcatenateAndSend(client_iterator,
-                       message_for_client,
-                       message_for_opponent,
-                       message_ending);
+    std::string message_for_client = "field2:miss:" + stream_for_message_ending.str();
+    std::string message_for_opponent = "field1:miss:" + stream_for_message_ending.str();
+    client_iterator->PrepareMessage(message_for_client);
+    client_iterator->opponent_->PrepareMessage(message_for_opponent);
     client_iterator->status_ = TClient::WAITING_STEP;
     client_iterator->opponent_->status_ = TClient::MAKING_STEP;
     break;
   }
 
   case TClient::HALF: {
-    char message_for_client[12] = "field2:half";
-    char message_for_opponent[12] = "field1:half";
-    ConcatenateAndSend(client_iterator,
-                       message_for_client,
-                       message_for_opponent,
-                       message_ending);
+    std::string message_for_client = "field2:half:" + stream_for_message_ending.str();
+    std::string message_for_opponent = "field1:half:" + stream_for_message_ending.str();
+    client_iterator->PrepareMessage(message_for_client);
+    client_iterator->opponent_->PrepareMessage(message_for_opponent);
     break;
   }
 
   case TClient::KILL: {
-    char message_for_client[12] = "field2:kill";
-    char message_for_opponent[12] = "field1:kill";
-    ConcatenateAndSend(client_iterator,
-                       message_for_client,
-                       message_for_opponent,
-                       message_ending);
+    std::string message_for_client = "field2:kill:" + stream_for_message_ending.str();
+    std::string message_for_opponent = "field1:kill:" + stream_for_message_ending.str();
+    client_iterator->PrepareMessage(message_for_client);
+    client_iterator->opponent_->PrepareMessage(message_for_opponent);
     break;
   }
 
   case TClient::WIN: {
-    char message_for_client[12] = "field2:kill";
-    char message_for_opponent[12] = "field1:kill";
-    ConcatenateAndSend(client_iterator,
-                       message_for_client,
-                       message_for_opponent,
-                       message_ending);
+    std::string message_for_client = "field2:kill:" + stream_for_message_ending.str();
+    std::string message_for_opponent = "field1:kill:" + stream_for_message_ending.str();
+    client_iterator->PrepareMessage(message_for_client);
+    client_iterator->opponent_->PrepareMessage(message_for_opponent);
     client_iterator->PrepareMessage("won");
     client_iterator->opponent_->PrepareMessage("lost");
     break;
@@ -413,16 +410,6 @@ bool Server::RecieveStep(const char* buf,
   }
 
   return true;
-}
-
-void Server::ConcatenateAndSend(Clients::iterator client_iterator,
-                                char* message_for_client,
-                                char* message_for_opponent,
-                                char* message_ending) {
-  strcat(message_for_client, message_ending);
-  strcat(message_for_opponent, message_ending);
-  client_iterator->PrepareMessage(message_for_client);
-  client_iterator->PrepareMessage(message_for_opponent);
 }
 
 bool Server::IsFree(Clients::iterator client_iterator) const {
