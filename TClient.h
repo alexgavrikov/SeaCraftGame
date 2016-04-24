@@ -20,12 +20,12 @@
 #endif
 
 #include <cstdlib>
-#include <list>
-#include <vector>
-#include <mutex>
-#include <atomic>
-#include <queue>
 #include <algorithm>
+#include <atomic>
+#include <list>
+#include <mutex>
+#include <vector>
+#include <queue>
 #include "queue_cond.h"
 
 class ThreadSafeQueue {

@@ -8,19 +8,17 @@
 #ifndef QUEUE_COND_H_
 #define QUEUE_COND_H_
 
+#include <condition_variable>
+#include <mutex>
 #include <queue>
 #include <thread>
-#include <mutex>
-#include <condition_variable>
 #include <string>
 
 struct QueryAndSocket {
   std::string message;
   int sock;
 
-  QueryAndSocket(const std::string& message, int sock)
-      : message(message), sock(sock) {
-  }
+  QueryAndSocket(const std::string& message, int sock) : message(message), sock(sock) {}
 };
 
 template<typename T>
