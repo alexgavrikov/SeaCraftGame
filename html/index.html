@@ -142,7 +142,7 @@ var makePost = function() {
         }).always(function() {
             kPostMsg = ''
         })
-    }, 2000) 
+    }, 10) 
     
 }
 
@@ -157,7 +157,7 @@ $(document).ready(function() {
             console.log(data)
             analiseAnswer(data) // TODO delete comment
         })
-    }, 10000)
+    }, 500)
 })
 
 $(document).on('click', '#my_table td', function() {
