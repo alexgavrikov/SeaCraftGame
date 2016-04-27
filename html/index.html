@@ -58,6 +58,10 @@ var setStatus = function(str) {
         div.html('Status: waiting')
 }
 
+var show_alert = function(str) {
+    $('#alert_div').html('Message: ' + str)
+}
+
 var analiseAnswer = function(data) {
     name = data.split(':')[0]
     if (name == 'field1' || name == 'field2') {
@@ -93,29 +97,29 @@ var analiseAnswer = function(data) {
         }
     } else if (name == 'shipping') {
         if (data.split(':')[1] == 'wrong') {
-            alert('Your ship placement is bad, please continue thinking')
+            show_alert('Your ship placement is bad, please continue thinking')
             setStatus('shipping')
         } else {
-            alert('Your ship placement is good, you can play')
+            show_alert('Your ship placement is good, you can play')
             setStatus('waiting')
         }
     } else if (name == 'opponent') {
         if (data.split(':')[1] == 'came')
-            alert('Opponent came')
+            show_alert('Opponent came')
         else if (data.split(':')[1] == 'shipped')
-            alert('Opponent placed his ships')
+            show_alert('Opponent placed his ships')
         else if (data.split(':')[1] == 'left')
-            alert('Opponent has gone away, refresh your page')
+            show_alert('Opponent has gone away, refresh your page')
     } else if (name == 'go1') {
-        alert('Your turn is first')
+        show_alert('Your turn is first')
         setStatus('my_turn')
     } else if (name == 'go2') {
-        alert('Opponent\'s turn is first')
+        show_alert('Opponent\'s turn is first')
         setStatus('enemy_turn')
     } else if (name == 'won') {
-        alert ('Congratulations! You win! Refresh your page')
+        show_alert ('Congratulations! You win! Refresh your page')
     } else if (name == 'lost') {
-        alert ('Congratulations! You lose! Refresh your page')
+        show_alert ('Congratulations! You lose! Refresh your page')
     }
 }
 
@@ -171,14 +175,14 @@ $(document).on('click', '#enemy_table td', function() {
                 analiseAnswer(data)
             })
         } else {
-            alert('You must not press here')
+            show_alert('You must not press here')
         }
     }
 })
 
 $(document).on('click', '#send_ships', function() {
     if (kStatus != 'shipping') {
-        alert('You must not press here')
+        show_alert('You must not press here')
         return
     }
     setStatus('waiting')
@@ -208,6 +212,7 @@ $(document).on('click', '#send_ships', function() {
         <div style="float:left; width:100px; margin: 50px">
             <button id="send_ships" style="margin: 0 auto">Send field</button>
             <div id="status_div" style="margin: 10px auto; text-align: center"></div>
+            <div id="alert_div" style="margin: 10px auto; text-align: center"></div>
         </div>
         <div style="float:right">
             <div>Enemy's field</div>
