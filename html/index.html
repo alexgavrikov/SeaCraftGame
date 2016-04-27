@@ -59,6 +59,7 @@ var setStatus = function(str) {
 }
 
 var analiseAnswer = function(data) {
+    data = 'field1:kill:3:5:4:5:5:5:8:8'
     name = data.split(':')[0]
     if (name == 'field1' || name == 'field2') {
         console.log('in analise ' + data)
@@ -79,26 +80,17 @@ var analiseAnswer = function(data) {
         }
         if (data.split(':')[1] == 'kill') {
             coordsToTd(name, data.split(':')[2], data.split(':')[3]).css('background-color', 'red').attr('state', 'ship')
-                for (var i = 1; i < kTableSize + 1; ++i) {
-                    for (var j = 1; j < kTableSize + 1; ++j) {
-                        if (coordsToTd(name, i, j).attr('state') == 'free') {
-                            err = 0
-                            for (var sh_i = -1; sh_i <= 1; ++sh_i) {
-                                for (var sh_j = -1; sh_j <= 1; ++sh_j) {
-                                    if (sh_i == 0 && sh_j == 0)
-                                        continue
-                                    if (coordsToTd(name, i + sh_i, j + sh_j).attr('state') == 'ship') {
-                                        coordsToTd(name, i, j).attr('state', 'dot').html('<div></div>')
-                                        err = 1
-                                        break
-                                    }
-                                }
-                                if (err == 1)
-                                    break
-                            }
+            for (var sh = 0; sh < (data.split(':').length - 2) / 2; ++sh) {
+                i = parseInt(data.split(':')[2 + 2 * sh])
+                j = parseInt(data.split(':')[2 + 2 * sh + 1])
+                for (var sh_i = -1; sh_i <= 1; ++sh_i) {
+                    for (var sh_j = -1; sh_j <= 1; ++sh_j) {
+                        if (coordsToTd(name, i + sh_i, j + sh_j).attr('state') == 'free') { 
+                            coordsToTd(name, i + sh_i, j + sh_j).attr('state', 'dot').html('<div></div>')
                         }
                     }
                 }
+            }
         }
     } else if (name == 'shipping') {
         if (data.split(':')[1] == 'wrong') {
@@ -152,6 +144,7 @@ $(document).ready(function() {
     fillTable($('#enemy_table'))
     setStatus('shipping')
     kLogin = $('#your_login').attr('class')
+    analiseAnswer(123) // TODO delete this
     setInterval(function() {
         $.post('/', kLogin + ':' + '', function(data) {
             // console.log(data)
