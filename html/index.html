@@ -143,7 +143,6 @@ $(document).ready(function() {
     fillTable($('#enemy_table'))
     setStatus('shipping')
     kLogin = $('#your_login').attr('class')
-    analiseAnswer(123) // TODO delete this
     setInterval(function() {
         $.post('/', kLogin + ':' + '', function(data) {
             // console.log(data)
