@@ -32,11 +32,13 @@ void TClient::SendMessages() {
     sz -= res;
   }
 
-//  std::stringstream debugging_output;
-//  debugging_output << whole_message.str();
-//  debugging_output << std::endl << "END OF MESSAGE" << std::endl
-//      << std::endl;
-//  ThreadSafePrint(debugging_output);
+  if (message_itself != "OKK") {
+    std::stringstream debugging_output;
+    debugging_output << message_itself;
+    debugging_output << std::endl << "END OF MESSAGE" << std::endl
+        << std::endl;
+    ThreadSafePrint(debugging_output);
+  }
 }
 
 void TClient::PrepareMessage(const std::string& message) {
@@ -229,7 +231,9 @@ std::vector<Coordinate> TClient::GetInclusiveShip(Coordinate coordinate) const {
 // and returns MISS, HALF, KILL or WIN.
 
 // Returns HALF if you strike DEAD piece
-size_t TClient::GetShooting(const size_t x_coord, const size_t y_coord) {
+size_t TClient::GetShooting(const size_t x_coord,
+                            const size_t y_coord,
+                            std::vector<Coordinate>& pieces_of_killed) {
   if (ships_[y_coord - 1][x_coord - 1] == TClient::WATER) {
     return TClient::MISS;
   } else if (ships_[y_coord - 1][x_coord - 1] == TClient::SHIP_PIECE_OK) {
@@ -254,6 +258,7 @@ size_t TClient::GetShooting(const size_t x_coord, const size_t y_coord) {
       for (auto coordinate : inclusive_ship) {
         ships_[coordinate.first][coordinate.second] =
             TClient::SHIP_PIECE_DEAD;
+        pieces_of_killed.emplace_back(coordinate.first + 1, coordinate.second + 1);
       }
       return TClient::KILL;
     } else {

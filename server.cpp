@@ -177,7 +177,7 @@ void Server::ParseData(const char* buf,
   // Functions Server::RecieveShips(...) and Server::RecieveStep(...) contain only preparing messages 
   // (pushing them into the clients' messages_queues by calling TClient::PrepareMessage(...)). And after
   // that we send messages by calling TClient::SendMessages()
-  std::cout << "zzz" << buf << "zzz" << std::endl;
+//  std::cout << "zzz" << buf << "zzz" << std::endl;
 
   if (RecieveShips(buf, size, client_iterator)) {
     client_iterator->SendMessages();
@@ -365,16 +365,22 @@ bool Server::RecieveStep(const char* buf,
 //  std::cout << ": " << client_iterator->opponent_->ships_[y_coord-1][x_coord] << std::endl;
 //  std::cout << ": " << client_iterator->opponent_->ships_[y_coord][x_coord-1] << std::endl;
 //  std::cout << ": " << client_iterator->opponent_->ships_[y_coord-1][x_coord-2] << std::endl;
-  size_t result_of_shooting = client_iterator->opponent_->GetShooting(x_coord, y_coord);
+  std::vector<TClient::Coordinate> pieces_of_killed;
+  size_t result_of_shooting = client_iterator->opponent_->GetShooting(x_coord, y_coord, pieces_of_killed);
 //  std::cout << "result of shooting: " << result_of_shooting << std::endl;
 
-  std::stringstream stream_for_message_ending;
-  stream_for_message_ending << y_coord << ":" << x_coord << std::endl;
+  std::stringstream stream_for_message_ending_if_not_killed;
+  stream_for_message_ending_if_not_killed << y_coord << ":" << x_coord << std::endl;
+  std::stringstream stream_for_message_ending_if_killed;
+    for (const auto& killed_piece : pieces_of_killed) {
+      stream_for_message_ending_if_killed << killed_piece.first << ":"
+          << killed_piece.second << std::endl;
+    }
 
   switch (result_of_shooting) {
   case TClient::MISS: {
-    std::string message_for_client = "field2:miss:" + stream_for_message_ending.str();
-    std::string message_for_opponent = "field1:miss:" + stream_for_message_ending.str();
+    std::string message_for_client = "field2:miss:" + stream_for_message_ending_if_not_killed.str();
+    std::string message_for_opponent = "field1:miss:" + stream_for_message_ending_if_not_killed.str();
     client_iterator->PrepareMessage(message_for_client);
     client_iterator->opponent_->PrepareMessage(message_for_opponent);
     client_iterator->status_ = TClient::WAITING_STEP;
@@ -383,24 +389,24 @@ bool Server::RecieveStep(const char* buf,
   }
 
   case TClient::HALF: {
-    std::string message_for_client = "field2:half:" + stream_for_message_ending.str();
-    std::string message_for_opponent = "field1:half:" + stream_for_message_ending.str();
+    std::string message_for_client = "field2:half:" + stream_for_message_ending_if_not_killed.str();
+    std::string message_for_opponent = "field1:half:" + stream_for_message_ending_if_not_killed.str();
     client_iterator->PrepareMessage(message_for_client);
     client_iterator->opponent_->PrepareMessage(message_for_opponent);
     break;
   }
 
   case TClient::KILL: {
-    std::string message_for_client = "field2:kill:" + stream_for_message_ending.str();
-    std::string message_for_opponent = "field1:kill:" + stream_for_message_ending.str();
+    std::string message_for_client = "field2:kill:" + stream_for_message_ending_if_killed.str();
+    std::string message_for_opponent = "field1:kill:" + stream_for_message_ending_if_killed.str();
     client_iterator->PrepareMessage(message_for_client);
     client_iterator->opponent_->PrepareMessage(message_for_opponent);
     break;
   }
 
   case TClient::WIN: {
-    std::string message_for_client = "field2:kill:" + stream_for_message_ending.str();
-    std::string message_for_opponent = "field1:kill:" + stream_for_message_ending.str();
+    std::string message_for_client = "field2:kill:" + stream_for_message_ending_if_not_killed.str();
+    std::string message_for_opponent = "field1:kill:" + stream_for_message_ending_if_not_killed.str();
     client_iterator->PrepareMessage(message_for_client);
     client_iterator->opponent_->PrepareMessage(message_for_opponent);
     client_iterator->PrepareMessage("won");

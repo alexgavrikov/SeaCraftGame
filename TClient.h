@@ -58,6 +58,7 @@ private:
 class TClient {
 public:
   friend class Server;
+  using Coordinate = std::pair<int, int>;
 
   enum {
     SHIPPING, WAITING, MAKING_STEP, WAITING_STEP
@@ -86,12 +87,12 @@ public:
 
   // The following function does a change in ships-vector (if necessary)
   // and returns MISS, HALF, KILL or WIN.
-  size_t GetShooting(const size_t x_coord, const size_t y_coord);
+  size_t GetShooting(const size_t x_coord,
+                     const size_t y_coord,
+                     std::vector<Coordinate>& pieces_of_killed);
 
 private:
- 
   // CorrectShips functions
-  using Coordinate = std::pair<int, int>;
   Coordinate FindEndOfShip(const Coordinate ship_begin) const;
   Coordinate FindBeginOfShip(const Coordinate ship_begin) const;
   std::vector<Coordinate> GetShip(const Coordinate ship_begin,
@@ -104,7 +105,7 @@ private:
   std::vector<Coordinate> GetInclusiveShip(Coordinate coordinate) const;
   // End of CorrectShips functions  
   
-  static const size_t kCorrectHitsForWin = 18;
+  static const size_t kCorrectHitsForWin = 20;
 
   int client_socket_;
   std::list<TClient>::iterator opponent_;
