@@ -60,8 +60,8 @@ var setStatus = function(str) {
 
 var analiseAnswer = function(data) {
     name = data.split(':')[0]
-    console.log('in analise ' + data)
     if (name == 'field1' || name == 'field2') {
+        console.log('in analise ' + data)
         if (name == 'field1')
             name = 'my'
         else
@@ -154,7 +154,7 @@ $(document).ready(function() {
     kLogin = $('#your_login').attr('class')
     setInterval(function() {
         $.post('/', kLogin + ':' + '', function(data) {
-            console.log(data)
+            // console.log(data)
             analiseAnswer(data) // TODO delete comment
         })
     }, 500)
