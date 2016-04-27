@@ -78,10 +78,10 @@ var analiseAnswer = function(data) {
                 setStatus('enemy_turn')
         }
         if (data.split(':')[1] == 'kill') {
-            coordsToTd(name, data.split(':')[2], data.split(':')[3]).css('background-color', 'red').attr('state', 'ship')
             for (var sh = 0; sh < (data.split(':').length - 2) / 2; ++sh) {
                 i = parseInt(data.split(':')[2 + 2 * sh])
                 j = parseInt(data.split(':')[2 + 2 * sh + 1])
+                coordsToTd(name, i, j).css('background-color', 'red').attr('state', 'ship')
                 for (var sh_i = -1; sh_i <= 1; ++sh_i) {
                     for (var sh_j = -1; sh_j <= 1; ++sh_j) {
                         if (coordsToTd(name, i + sh_i, j + sh_j).attr('state') == 'free') { 
