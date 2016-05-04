@@ -1,7 +1,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>сайт</title>
+    <title>Sea Craft Game</title>
     <style>
         table {
             table-layout: fixed;
@@ -200,6 +200,33 @@ $(document).on('click', '#send_ships', function() {
         analiseAnswer(data)
     })
 })
+
+$(document).on('click', '#auto_shipping', function() {
+    if (kStatus != 'shipping') {
+        show_alert('You must not press here')
+        return
+    }
+    ships = '1111000000' +
+            '0000000000' +
+            '1110001110' +
+            '0000000000' +
+            '1010100000' +
+            '1010100001' +
+            '0000000000' +
+            '0001000100' +
+            '0000000000' +
+            '0000010000'
+    for (var i = 1; i < kTableSize + 1; ++i) {
+        for (var j = 1; j < kTableSize + 1; ++j) {
+            if (ships[(i - 1) * 10 + (j - 1)] == 1)
+                coordsToTd('my', i, j).attr('state', 'my_ship').css('background-color', 'blue')
+            else
+                coordsToTd('my', i, j).attr('state', 'free').css('background-color', 'white')
+        }
+    }
+    
+    
+})
     </script>
 </head>
 <body>
@@ -210,9 +237,10 @@ $(document).on('click', '#send_ships', function() {
             <table id="my_table" cellspacing="0" cellpadding="0" border="1"></table>
         </div>
         <div style="float:left; width:100px; margin: 50px">
-            <button id="send_ships" style="margin: 0 auto">Send field</button>
-            <div id="status_div" style="margin: 10px auto; text-align: center"></div>
-            <div id="alert_div" style="margin: 10px auto; text-align: center"></div>
+            <button id="send_ships" style="margin: 10px">Send field</button>
+            <button id="auto_shipping" style="margin: 10px">Auto shipping</button>
+            <div id="status_div" style="margin: 10px; text-align: center"></div>
+            <div id="alert_div" style="margin: 10px; text-align: center"></div>
         </div>
         <div style="float:right">
             <div>Enemy's field</div>
