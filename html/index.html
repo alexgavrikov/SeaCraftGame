@@ -63,9 +63,10 @@ var show_alert = function(str) {
 }
 
 var analiseAnswer = function(data) {
+    if (data != 'OKK')
+        console.log(data)
     name = data.split(':')[0]
     if (name == 'field1' || name == 'field2') {
-        console.log('in analise ' + data)
         if (name == 'field1')
             name = 'my'
         else
