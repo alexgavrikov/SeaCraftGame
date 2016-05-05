@@ -79,7 +79,14 @@ private:
   // Returns true if connection was closed by handler, false if connection was closed by peer
   bool RecvLoop(Clients::iterator client);
   void LoopOfSendingHTML();
-  bool LoopOfListenToOneSocket(int socket_i_listen);
+  bool LoopOfListenToOneSocket(const std::shared_ptr<
+                                                            QueueWithCondVar<
+                                                                std::string>>& packages,
+                                                        int socket_i_listen);
+  bool LoopOfPreprocessingFromOneSocket(const std::shared_ptr<
+                                                  QueueWithCondVar<
+                                                      std::string>>& packages,
+                                              int source_socket);
   void ParseData(const char* buf, int size, Clients::iterator client_iterator);
   void Disconnect(Clients::iterator client_iterator);
   bool RecieveShips(const char* buf,

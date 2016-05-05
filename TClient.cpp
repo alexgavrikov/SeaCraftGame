@@ -12,33 +12,42 @@
 
 void TClient::SendMessages() {
   std::stringstream whole_message;
-  whole_message << "HTTP/1.1 200 OK\nContent-Length: ";
+  whole_message << "HTTP/1.1 200 OK\r\nContent-Length: ";
 
   std::string message_itself;
   if (messages_queue.empty()) {
-    message_itself = "OKK";
+    message_itself = "0123456789.10.11.12.13.14.15.16.17";
   } else {
     message_itself = messages_queue.dequeue();
+    std::cout << message_itself <<std::endl;
   }
-  whole_message << message_itself.size() << "\nContent-Type: text/html\n\n" << message_itself;
+  whole_message << message_itself.size()<< "\r\nContent-Type: text/html\r\n\r\n" << message_itself;
 
   const char* data = whole_message.str().c_str();
+//    std::cout <<data<<std::endl;
   size_t sz = whole_message.str().size();
+  int count = 0;
   for (; sz > 0;) {
     int res = send(client_socket_, data, sz, 0);
-    if (res <= 0)
+    if (res <= 0) {
+      std::cout <<"ewkjrgw"<<std::endl;
       return;
+    }
     data += res;
     sz -= res;
+    ++count;
+    if(count >=2) {
+      std::cout <<count <<std::endl;
+    }
   }
 
-  if (message_itself != "OKK") {
-    std::stringstream debugging_output;
-    debugging_output << message_itself;
-    debugging_output << std::endl << "END OF MESSAGE" << std::endl
-        << std::endl;
-    ThreadSafePrint(debugging_output);
-  }
+//  if (message_itself != "0123456789.10.11.12.13.14.15.16.17") {
+////    std::stringstream debugging_output;
+////    debugging_output << whole_message.str();
+////    debugging_output << std::endl << "END OF MESSAGE" << std::endl
+////        << std::endl;
+////    ThreadSafePrint(debugging_output);
+//  }
 }
 
 void TClient::PrepareMessage(const std::string& message) {
