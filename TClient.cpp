@@ -19,9 +19,13 @@ void TClient::SendMessages() {
     message_itself = "0123456789.10.11.12.13.14.15.16.17";
   } else {
     message_itself = messages_queue.dequeue();
-    std::cout << message_itself <<std::endl;
+    if (message_itself.substr(0, 5) == "field" && message_itself.substr(7, 4) == "half") {
+      messages_queue.enqueue(message_itself);
+    }
+    std::cout << message_itself << std::endl;
   }
-  whole_message << message_itself.size()<< "\r\nContent-Type: text/html\r\n\r\n" << message_itself;
+  whole_message << message_itself.size()
+      << "\r\nContent-Type: text/html\r\n\r\n" << message_itself;
 
   const char* data = whole_message.str().c_str();
 //    std::cout <<data<<std::endl;
@@ -30,14 +34,14 @@ void TClient::SendMessages() {
   for (; sz > 0;) {
     int res = send(client_socket_, data, sz, 0);
     if (res <= 0) {
-      std::cout <<"ewkjrgw"<<std::endl;
+      std::cout << "ewkjrgw" << std::endl;
       return;
     }
     data += res;
     sz -= res;
     ++count;
-    if(count >=2) {
-      std::cout <<count <<std::endl;
+    if (count >= 2) {
+      std::cout << count << std::endl;
     }
   }
 
@@ -267,7 +271,8 @@ size_t TClient::GetShooting(const size_t x_coord,
       for (auto coordinate : inclusive_ship) {
         ships_[coordinate.first][coordinate.second] =
             TClient::SHIP_PIECE_DEAD;
-        pieces_of_killed.emplace_back(coordinate.first + 1, coordinate.second + 1);
+        pieces_of_killed.emplace_back(coordinate.first + 1,
+                                      coordinate.second + 1);
       }
       return TClient::KILL;
     } else {
