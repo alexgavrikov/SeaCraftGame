@@ -63,8 +63,11 @@ var show_alert = function(str) {
 }
 
 var analiseAnswer = function(data) {
-    if (data != 'OKK')
+    if (data != 'OKK') {
         console.log(data)
+        for (var i = 0; i < data.length; ++i)
+            console.log(data.charCodeAt(i))
+    }
     name = data.split(':')[0]
     if (name == 'field1' || name == 'field2') {
         if (name == 'field1')
@@ -153,7 +156,7 @@ $(document).ready(function() {
             // console.log(data)
             analiseAnswer(data) // TODO delete comment
         })
-    }, 5000)
+    }, 500)
 })
 
 $(document).on('click', '#my_table td', function() {
@@ -235,7 +238,7 @@ $(document).on('click', '#auto_shipping', function() {
                                border: 1px solid grey; overflow:auto; padding: 5px">
         <div style="float:left">
             <div>My field</div>
-            <table id="my_table" cellspacing="0" cellpadding="0" border="1"></table>
+            <table id="my_table" cellspacing="0" cellpadding="0" border="1" rules="all"></table>
         </div>
         <div style="float:left; width:100px; margin: 50px">
             <button id="send_ships" style="margin: 10px">Send field</button>
@@ -245,7 +248,7 @@ $(document).on('click', '#auto_shipping', function() {
         </div>
         <div style="float:right">
             <div>Enemy's field</div>
-            <table id="enemy_table" cellspacing="0" cellpadding="0" border="1"></table>
+            <table id="enemy_table" cellspacing="0" cellpadding="0" border="1" rules="all"></table>
         </div>
     </div>
 </body>
