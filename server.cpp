@@ -145,7 +145,12 @@ bool Server::LoopOfListenToOneSocket(const std::shared_ptr<
     if (size <= 0) {
 //      std::cout << "here"<<std::endl;
       packages->enqueue("END");
+#ifdef _WIN32
+      closesocket(socket_i_listen);
+      WSACleanup();
+#elif __unix__
       close(socket_i_listen);
+#endif
       return false;
     }
     packages->enqueue(std::string(buf));
@@ -170,7 +175,7 @@ bool Server::LoopOfPreprocessingFromOneSocket(const std::shared_ptr<
     package.clear();
     if (current_unfinished_message.substr(0, 3) == "GET") {
       size_t end_pos = current_unfinished_message.find("\r\n\r\n");
-//      std::cout << end_pos << std::endl;
+      std::cout << end_pos << std::endl;
       if (end_pos != std::string::npos) {
         package = current_unfinished_message.substr(end_pos + 4);
         queue_of_GET_queries.enqueue(QueryAndSocket(current_unfinished_message.substr(0,
@@ -293,25 +298,24 @@ bool Server::RecieveShips(const char* buf,
 //    user_wants_random = true;
 //    // CODE HERE
 //  } else {
-    client_iterator->ships_.resize(10);
-    buf += 9;
-    for (int y_coord = 0; y_coord != 10; ++y_coord) {
-      client_iterator->ships_[y_coord].resize(10);
-      for (int x_coord = 0; x_coord != 10; ++x_coord) {
-        if (*buf == '0') {
-          client_iterator->ships_[y_coord][x_coord] = TClient::WATER;
-          ++buf;
-        } else if (*buf == '1') {
-          //  std::cout << "ekjr"<<y_coord<<" "<<x_coord<<std::endl;
-          client_iterator->ships_[y_coord][x_coord] =
-              TClient::SHIP_PIECE_OK;
-          ++buf;
-        } else {
-          client_iterator->ships_.clear();
-          return false;
-        }
+  client_iterator->ships_.resize(10);
+  buf += 9;
+  for (int y_coord = 0; y_coord != 10; ++y_coord) {
+    client_iterator->ships_[y_coord].resize(10);
+    for (int x_coord = 0; x_coord != 10; ++x_coord) {
+      if (*buf == '0') {
+        client_iterator->ships_[y_coord][x_coord] = TClient::WATER;
+        ++buf;
+      } else if (*buf == '1') {
+        //  std::cout << "ekjr"<<y_coord<<" "<<x_coord<<std::endl;
+        client_iterator->ships_[y_coord][x_coord] = TClient::SHIP_PIECE_OK;
+        ++buf;
+      } else {
+        client_iterator->ships_.clear();
+        return false;
       }
     }
+  }
 //  }
 
 //  std::cout << "ekjr"<<client_iterator->ships_[1][1]<<std::endl;
