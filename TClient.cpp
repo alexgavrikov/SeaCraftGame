@@ -12,20 +12,21 @@
 
 void TClient::SendMessages() {
   std::stringstream whole_message;
-  whole_message << "HTTP/1.1 200 OK\r\nContent-Length: ";
+  whole_message << "HTTP/1.1 200 OK"+kLineEnd+"Content-Length: ";
 
   std::string message_itself;
   if (messages_queue.empty()) {
     message_itself = "0123456789.10.11.12.13.14.15.16.17";
   } else {
     message_itself = messages_queue.dequeue();
-    if (message_itself.substr(0, 5) == "field" && message_itself.substr(7, 4) == "half") {
-      messages_queue.enqueue(message_itself);
-    }
+//    if (message_itself.substr(0, 5) == "field" && message_itself.substr(7, 4) == "half") {
+//      messages_queue.enqueue(message_itself);
+//    }
     std::cout << message_itself << std::endl;
+
   }
   whole_message << message_itself.size()
-      << "\r\nContent-Type: text/html\r\n\r\n" << message_itself;
+      << kLineEnd<<"Content-Type: text/html"<<kLineEnd<<kLineEnd << message_itself;
 
   const char* data = whole_message.str().c_str();
 //    std::cout <<data<<std::endl;
