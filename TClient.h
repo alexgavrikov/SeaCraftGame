@@ -8,13 +8,17 @@
 #ifndef TCLIENT_H_
 #define TCLIENT_H_
 
+#include <string>
+
 #ifdef _WIN32
 #include <WinSock2.h>
 #pragma comment(lib, "Ws2_32.lib")
 
 static const std::string kLineEnd = "\r\n";
 static const char kGetlineEnd = '\r';
+static const std::string kHtmlLineEnd = "";
 static const size_t kLineEndLen = 2;
+
 #elif __unix__
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -22,9 +26,13 @@ static const size_t kLineEndLen = 2;
 #include <netdb.h>
 #include <unistd.h>
 
-static const std::string kLineEnd = "\n";
+static const std::string kLineEnd = "\r\n";
 static const char kGetlineEnd = '\n';
-static const size_t kLineEndLen = 1;
+static const std::string kHtmlLineEnd = "\n";
+static const size_t kLineEndLen = 2;
+//static const std::string kLineEnd = "\n";
+//static const char kGetlineEnd = '\n';
+//static const size_t kLineEndLen = 1;
 #endif
 
 #include <cstdlib>

@@ -1,7 +1,7 @@
 /*
  * server.cpp
  *
- *  Created on: 8 апр. 2016 г.
+ *  Created on: 8 пїЅпїЅпїЅ. 2016 пїЅ.
  *      Author: user
  */
 
