@@ -17,7 +17,6 @@
 static const std::string kLineEnd = "\r\n";
 static const char kGetlineEnd = '\r';
 static const std::string kHtmlLineEnd = "";
-static const size_t kLineEndLen = 2;
 
 #elif __unix__
 #include <sys/types.h>
@@ -26,13 +25,9 @@ static const size_t kLineEndLen = 2;
 #include <netdb.h>
 #include <unistd.h>
 
-static const std::string kLineEnd = "\r\n";
+static const std::string kLineEnd = "\n";
 static const char kGetlineEnd = '\n';
 static const std::string kHtmlLineEnd = "\n";
-static const size_t kLineEndLen = 2;
-//static const std::string kLineEnd = "\n";
-//static const char kGetlineEnd = '\n';
-//static const size_t kLineEndLen = 1;
 #endif
 
 #include <cstdlib>
@@ -43,6 +38,12 @@ static const size_t kLineEndLen = 2;
 #include <vector>
 #include <queue>
 #include "queue_cond.h"
+
+static const std::string kHttpLineEnd = "\r\n";
+static const size_t kHttpLineEndLen = kHttpLineEnd.size();
+static const std::string kHttpHeaderMessageDelimiter(kHttpLineEnd + kHttpLineEnd);
+static const size_t kHttpHeaderMessageDelimiterLen = kHttpHeaderMessageDelimiter.size();
+static const size_t kLineEndLen = kLineEnd.size();
 
 class ThreadSafeQueue {
 public:
@@ -80,9 +81,7 @@ public:
     SHIPPING, WAITING, MAKING_STEP, WAITING_STEP
   };
 
-  TClient(int client_socket,
-          std::list<TClient>::iterator opponent,
-          size_t status)
+  TClient(int client_socket, std::list<TClient>::iterator opponent, size_t status)
       : client_socket_(client_socket), opponent_(opponent), status_(status) {
   }
 
@@ -103,24 +102,25 @@ public:
 
   // The following function does a change in ships-vector (if necessary)
   // and returns MISS, HALF, KILL or WIN.
-  size_t GetShooting(const size_t x_coord,
-                     const size_t y_coord,
-                     std::vector<Coordinate>& pieces_of_killed);
+  size_t GetShooting(const size_t x_coord, const size_t y_coord,
+      std::vector<Coordinate>& pieces_of_killed);
 
 private:
   // CorrectShips functions
   Coordinate FindEndOfShip(const Coordinate ship_begin) const;
   Coordinate FindBeginOfShip(const Coordinate ship_begin) const;
-  std::vector<Coordinate> GetShip(const Coordinate ship_begin,
-                                  const Coordinate ship_end) const;
+  std::vector<Coordinate> GetShip(const Coordinate ship_begin, const Coordinate ship_end) const;
   bool IsInGrid(const Coordinate coordinate) const;
-  bool IsInShip(const Coordinate coordinate, 
-                const Coordinate ship_begin, const Coordinate ship_end) const;
+
+  bool IsInShip(const Coordinate coordinate,
+      const Coordinate ship_begin, const Coordinate ship_end) const;
+
   std::vector<Coordinate> SurroundingOfShip(const Coordinate ship_begin,
-                                            const Coordinate ship_end) const;
+      const Coordinate ship_end) const;
+
   std::vector<Coordinate> GetInclusiveShip(Coordinate coordinate) const;
   // End of CorrectShips functions  
-  
+
   static const size_t kCorrectHitsForWin = 20;
 
   int client_socket_;
