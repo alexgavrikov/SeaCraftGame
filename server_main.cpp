@@ -9,6 +9,7 @@
 #include "server.h"
 
 int main(int argc, char** argv) {
+  static const std::string input_file = "../html/index.html";
 
 #ifdef _WIN32
   WSADATA wsaData;
@@ -23,7 +24,7 @@ int main(int argc, char** argv) {
   int port_to_bind = std::atoi(argv[1]);
   Server s;
   s.Bind(port_to_bind, "");
-  s.AcceptLoop();
+  s.AcceptLoop(input_file);
 
   return 0;
 }

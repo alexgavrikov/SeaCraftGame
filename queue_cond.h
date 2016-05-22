@@ -1,7 +1,7 @@
 /*
  * queue_cond.h
  *
- *  Created on: 23 апр. 2016 г.
+ *  Created on: 23 пїЅпїЅпїЅ. 2016 пїЅ.
  *      Author: user
  */
 
@@ -14,11 +14,11 @@
 #include <thread>
 #include <string>
 
-struct QueryAndSocket {
-  std::string message;
+struct PostQuery {
+  std::string content;
   int sock;
 
-  QueryAndSocket(const std::string& message, int sock) : message(message), sock(sock) {}
+  PostQuery(const std::string& content, int sock) : content(content), sock(sock) {}
 };
 
 template<typename T>

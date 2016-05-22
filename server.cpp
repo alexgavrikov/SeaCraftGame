@@ -16,6 +16,13 @@
 #include "thread_pool.h"
 #include "thread_safe_print.h"
 
+const std::string Server::kShippingHeader("shipping:");
+const size_t Server::kShippingHeaderLen = kShippingHeader.size();
+const size_t Server::kShipsMessageSize = 100 + kShippingHeaderLen;
+
+const std::string Server::kStepHeader("step:");
+const size_t Server::kStepHeaderLen = kStepHeader.size();
+
 bool Server::ResolveHost(const std::string &host, int &addr) {
   hostent *ent = gethostbyname(host.c_str());
   if (ent == nullptr)
@@ -49,33 +56,25 @@ void Server::Bind(int port, const std::string &host) {
   }
 }
 
-void Server::AcceptLoop() {
-  static constexpr size_t kInitialThreadsCount = 4;
+void Server::AcceptLoop(const std::string& html_input_file) {
+  static constexpr size_t kInitialThreadsCount = 2;
   ThreadPool threads_pool(kInitialThreadsCount);
-  threads_pool.enqueue([this] () {
-    LoopOfSendingHTML();
-  });
+  PrepareHTML(html_input_file);
   while (true) {
     int sock = accept(listener_socket_holder_->GetSocket(), nullptr, nullptr);
     if (sock < 0) {
       std::cout << "can't bind" << std::endl;
     } else {
-      std::shared_ptr<QueueWithCondVar<std::string>> packages(new QueueWithCondVar<std::string>);
-      threads_pool.enqueue([this, packages, sock] () {
-        LoopOfListenToOneSocket(packages, sock);
-      });
-      threads_pool.enqueue([this, packages, sock] () {
-        LoopOfPreprocessingFromOneSocket(packages, sock);
+      threads_pool.enqueue([this, sock] () {
+        LoopOfListenToOneSocket(sock);
       });
     }
   }
 }
 
-void Server::LoopOfSendingHTML() {
-  static constexpr size_t kInitialThreadsCount = 2;
-  std::string html;
-  std::ifstream html_file("../html/index.html", std::ios_base::binary);
-  std::string file_line, file_line_second, file_line_third;
+void Server::PrepareHTML(const std::string& html_input_file) {
+  std::ifstream html_file(html_input_file, std::ios_base::binary);
+  std::string file_line_third;
   std::getline(html_file, file_line, kGetlineEnd);
   std::getline(html_file, file_line_second, kGetlineEnd);
   while (std::getline(html_file, file_line_third, kGetlineEnd)) {
@@ -83,49 +82,52 @@ void Server::LoopOfSendingHTML() {
     std::swap(file_line, file_line_second);
     std::swap(file_line_second, file_line_third);
   }
-
-  ThreadPool threads_pool(kInitialThreadsCount);
-  while (true) {
-    auto query = queue_of_GET_queries.dequeue();
-    if (query.message.find("GET / HTTP") != std::string::npos) {
-      std::stringstream strstream;
-      strstream << "<div id=\"your_login\" class=\"" << current_free_login << "\">"
-          << current_free_login << "</ div > " << kHtmlLineEnd;
-      std::string html_with_login = html + strstream.str() + file_line + kHtmlLineEnd
-          + file_line_second + kHtmlLineEnd;
-      std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
-      clients_.emplace_back(query.sock, clients_.end(), TClient::SHIPPING);
-      Clients::iterator new_player_iter = --clients_.end();
-      login_to_iterator_map[current_free_login++ - 100] = new_player_iter;
-      clients_.back().PrepareMessage(html_with_login);
-      clients_.back().SendMessages();
-
-      if (clients_.size() > 1) {
-        Clients::iterator maybe_free_player_iter = --(--clients_.end());
-        if (IsFree(maybe_free_player_iter)) {
-          ConnectTwoClients(maybe_free_player_iter, new_player_iter);
-        }
-      }
-      list_mutex_wrapper.unlock();
-      auto future = threads_pool.enqueue([this, &new_player_iter] () {
-        RecvLoop(new_player_iter);
-      });
-    } else {
-      const std::string answer_to_get_query_for_icon = "HTTP/1.1 200 OK" + kHttpLineEnd
-          + "Content-Length: 3" + kHttpLineEnd + "Content-Type: text/html" + kHttpHeaderMessageDelimiter
-          + "OKK";
-      send(query.sock, answer_to_get_query_for_icon.c_str(), sizeof(answer_to_get_query_for_icon), 0);
-    }
-  }
 }
 
-bool Server::LoopOfListenToOneSocket(const std::shared_ptr<QueueWithCondVar<std::string>>& packages,
-    int socket_i_listen) {
+void Server::SendHTML(const std::string& get_query, int source_socket) {
+  std::stringstream strstream;
+  strstream << "<div id=\"your_login\" class=\"" << current_free_login << "\">"
+      << current_free_login << "</ div > " << kHtmlLineEnd;
+  std::string html_with_login = html + strstream.str() + file_line + kHtmlLineEnd + file_line_second
+      + kHtmlLineEnd;
+  std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
+  clients_.emplace_back(source_socket, clients_.end(), TClient::SHIPPING);
+  Clients::iterator new_player_iter = --clients_.end();
+  login_to_iterator_map[current_free_login++ - 100] = new_player_iter;
+  clients_.back().PrepareMessage(html_with_login);
+  clients_.back().SendMessage();
+
+  if (clients_.size() > 1) {
+    Clients::iterator maybe_free_player_iter = --(--clients_.end());
+    if (IsFree(maybe_free_player_iter)) {
+      ConnectTwoClients(maybe_free_player_iter, new_player_iter);
+    }
+  }
+  list_mutex_wrapper.unlock();
+}
+
+void Server::SendIcon(const std::string& get_query, int source_socket) {
+  const std::string answer_to_get_query_for_icon = "HTTP/1.1 200 OK" + kHttpLineEnd
+      + "Content-Length: 3" + kHttpLineEnd + "Content-Type: text/html" + kHttpHeaderMessageDelimiter
+      + "OKK";
+  send(source_socket, answer_to_get_query_for_icon.c_str(), sizeof(answer_to_get_query_for_icon),
+      0);
+}
+
+bool Server::LoopOfListenToOneSocket(int socket_i_listen) {
+  static constexpr size_t kInitialThreadsCount = 1;
+  // It is important that queue is created before threads_pool,
+  // because destruction-order is important.
+  QueueWithCondVar<std::string> packages;
+  ThreadPool threads_pool(kInitialThreadsCount);
+  threads_pool.enqueue([this, &packages, socket_i_listen] () {
+    LoopOfPreprocessingFromOneSocket(&packages, socket_i_listen);
+  });
   while (true) {
-    char buf[100000] = "";
-    int size = recv(socket_i_listen, buf, sizeof(buf), 0);
+    char package[100000] = "";
+    int size = recv(socket_i_listen, package, sizeof(package), 0);
     if (size <= 0) {
-      packages->enqueue("END");
+      packages.enqueue("");
 #ifdef _WIN32
       closesocket(socket_i_listen);
       WSACleanup();
@@ -134,19 +136,28 @@ bool Server::LoopOfListenToOneSocket(const std::shared_ptr<QueueWithCondVar<std:
 #endif
       return false;
     }
-    packages->enqueue(std::string(buf));
+    packages.enqueue(package);
   }
 }
 
-bool Server::LoopOfPreprocessingFromOneSocket(
-    const std::shared_ptr<QueueWithCondVar<std::string>>& packages, int source_socket) {
+bool Server::LoopOfPreprocessingFromOneSocket(QueueWithCondVar<std::string>* const packages,
+    int source_socket) {
+  static constexpr size_t kInitialThreadsCount = 1;
+  // It is important that queue is created before threads_pool,
+  // because destruction-order is important.
+  QueueWithCondVar<std::string> queries;
+  ThreadPool threads_pool(kInitialThreadsCount);
+  threads_pool.enqueue([this, &queries, source_socket] () {
+    LoopOfDistributingQueries(&queries, source_socket);
+  });
   std::string current_unfinished_message;
   std::string package;
   while (true) {
     if (package.empty()) {
       package = packages->dequeue();
     }
-    if (package == "END") {
+    if (package.empty()) {
+      queries.enqueue("");
       return true;
     }
     current_unfinished_message += package;
@@ -154,11 +165,10 @@ bool Server::LoopOfPreprocessingFromOneSocket(
     if (current_unfinished_message.substr(0, 3) == "GET") {
       size_t end_pos = current_unfinished_message.find(kHttpHeaderMessageDelimiter);
       if (end_pos != std::string::npos) {
+        const std::string query(
+            current_unfinished_message.substr(0, end_pos + kHttpHeaderMessageDelimiterLen));
+        queries.enqueue(query);
         package = current_unfinished_message.substr(end_pos + kHttpHeaderMessageDelimiterLen);
-        queue_of_GET_queries.enqueue(
-            QueryAndSocket(
-                current_unfinished_message.substr(0, end_pos + kHttpHeaderMessageDelimiterLen),
-                source_socket));
         current_unfinished_message.clear();
       }
     } else if (current_unfinished_message.find("POST") != std::string::npos) {
@@ -172,15 +182,7 @@ bool Server::LoopOfPreprocessingFromOneSocket(
           current_unfinished_message.substr(pos + 16, pos3 - (pos + 16)).c_str());
       std::string post_query = current_unfinished_message.substr(0,
           (pos2 + kHttpHeaderMessageDelimiterLen) + content_length);
-
-      //Skipping HTTP header, its end is indicated by an empty line
-      int begposition_of_message_itself = post_query.find(kHttpHeaderMessageDelimiter)
-          + kHttpHeaderMessageDelimiterLen;
-      std::string message_itself(post_query.substr(begposition_of_message_itself));
-      size_t login = std::atoi(message_itself.substr(0, 3).c_str());
-      auto client_iterator = login_to_iterator_map[login - 100];
-      client_iterator->queue_of_POST_queries_from_client.enqueue(
-          QueryAndSocket(message_itself.substr(4), source_socket));
+      queries.enqueue(post_query);
       package = current_unfinished_message.substr(
           (pos2 + kHttpHeaderMessageDelimiterLen) + content_length);
       current_unfinished_message.clear();
@@ -188,33 +190,60 @@ bool Server::LoopOfPreprocessingFromOneSocket(
   }
 }
 
-// Returns true if connection was closed by handler, false if connection was closed by peer
-bool Server::RecvLoop(Clients::iterator client) {
+bool Server::LoopOfDistributingQueries(QueueWithCondVar<std::string>* const queries, int source_socket) {
+  static constexpr size_t kInitialThreadsCount = 2;
+  ThreadPool threads_pool(kInitialThreadsCount);
   while (true) {
-    auto query = client->queue_of_POST_queries_from_client.dequeue();
-    client->client_socket_ = query.sock;
-    ParseData(query.message.c_str(), query.message.size(), client);
-  }
+    std::string query = queries->dequeue();
+    if (query.empty()) {
+      return true;
+    }
 
-  return true;
+    if (query.find("GET / HTTP") != std::string::npos) {
+      threads_pool.enqueue([this, query, source_socket] () {
+        SendHTML(query, source_socket);
+      });
+    } else if (query.substr(0, 3) == "GET") {
+      // Turns out this is GET-query for icon
+      threads_pool.enqueue([this, query, source_socket] () {
+        SendIcon(query, source_socket);
+      });
+    } else if (query.find("POST") != std::string::npos) {
+      //Skipping HTTP header, its end is indicated by an empty line
+      int begposition_of_content = query.find(kHttpHeaderMessageDelimiter)
+          + kHttpHeaderMessageDelimiterLen;
+      std::string content(query.substr(begposition_of_content));
+      size_t login = std::atoi(content.substr(0, 3).c_str());
+      auto client_iterator = login_to_iterator_map[login - 100];
+      client_iterator->POST_contents_queue_.enqueue(
+          PostQuery(content.substr(4), source_socket));
+      threads_pool.enqueue([this, client_iterator] () {
+        HandlePostQueryContent(client_iterator);
+      });
+    }
+  }
 }
 
-void Server::ParseData(const char* buf, const size_t size, Clients::iterator client_iterator) {
-  // Functions Server::RecieveShips(...) and Server::RecieveStep(...) contain only preparing messages
-  // (pushing them into the clients' messages_queues by calling TClient::PrepareMessage(...)). And after
-  // that we send messages by calling TClient::SendMessages()
+bool Server::HandlePostQueryContent(Clients::iterator client_iterator) {
+  std::unique_lock<std::mutex> handle_query_mutex_wrapper(client_iterator->handle_query_mutex);
+  auto query = client_iterator->POST_contents_queue_.dequeue();
 
-  if (RecieveShips(buf, size, client_iterator)) {
-    client_iterator->SendMessages();
-    return;
+  client_iterator->client_socket_ = query.sock;
+  const std::string content = query.content;
+
+  if (IsAboutShips(content, client_iterator)) {
+    FetchShips(content, client_iterator);
+    return true;
+  }
+  if (IsAboutStep(content, client_iterator)) {
+    FetchStep(content, client_iterator);
+    return true;
+  } else {
+    // Just send message.
+    client_iterator->SendMessage();
   }
 
-  if (RecieveStep(buf, size, client_iterator)) {
-    client_iterator->SendMessages();
-    return;
-  }
-
-  client_iterator->SendMessages();
+  return false;
 }
 
 void Server::ConnectTwoClients(Clients::iterator free_player_iter_first,
@@ -249,29 +278,24 @@ void Server::Disconnect(Clients::iterator client_iterator) {
   }
 }
 
-bool Server::RecieveShips(const char* buf, const size_t size, Clients::iterator client_iterator) {
-  static const std::string kShippingHeader("shipping:");
-  static const size_t kShippingHeaderLen = kShippingHeader.size();
-  static const size_t kShipsMessageSize = 100 + kShippingHeaderLen;
-
+bool Server::IsAboutShips(const std::string& message, Clients::iterator client_iterator) {
   if (client_iterator->status_ != TClient::SHIPPING) {
     return false;
   }
 
-  // Check if it is about receiving ships. if not return false
-  // if yes, extracting ships from  buf into client_iterator->ships; i. e. parsing buf here
-  // message about ships has to look like: "shipping:1010..000"
-  // One Hundred bits (zeros or ones) in message above!
-
-  if (size != kShipsMessageSize) {
+  if (message.size() != kShipsMessageSize) {
     return false;
   }
 
-  if (std::string(buf, kShippingHeaderLen) != kShippingHeader) {
+  if (message.substr(kShippingHeaderLen) != kShippingHeader) {
     return false;
   }
 
-  buf += kShippingHeaderLen;
+  return true;
+}
+
+bool Server::FetchShips(const std::string& message, Clients::iterator client_iterator) {
+  const char* buf = message.c_str() + kShippingHeaderLen;
   client_iterator->ships_.resize(10);
   for (int y_coord = 0; y_coord != 10; ++y_coord) {
     client_iterator->ships_[y_coord].resize(10, TClient::WATER);
@@ -303,26 +327,24 @@ bool Server::RecieveShips(const char* buf, const size_t size, Clients::iterator 
     client_iterator->PrepareMessage("shipping:wrong");
   }
 
+  client_iterator->SendMessage();
   return true;
 }
 
-// Check if buf's message is about receiving step. if not return false
-// if true: coordinates of his step should be in x_coord and y_coord
-// (let numeration be from 1 to 10).
-// message about step has to look like: "step:5:7"
-// 5 in this example means 5th row, 7 means 7th column.
-// In the example: x_coord = 7, y_coord = 5
-bool Server::RecieveStep(const char* buf, const size_t size, Clients::iterator client_iterator) {
-  static const std::string kStepHeader("step:");
-  static const size_t kStepHeaderLen = kStepHeader.size();
-
+bool Server::IsAboutStep(const std::string& message, Clients::iterator client_iterator) {
   if (client_iterator->status_ != TClient::MAKING_STEP) {
     return false;
   }
 
-  if (std::string(buf, kStepHeaderLen) != kStepHeader) {
+  if (message.substr(kStepHeaderLen) != kStepHeader) {
     return false;
   }
+
+  return true;
+}
+
+bool Server::FetchStep(const std::string& message, Clients::iterator client_iterator) {
+  const char* buf = message.c_str() + kShippingHeaderLen;
 
   std::stringstream stream(buf + kStepHeaderLen);
   int y_coord = 0, x_coord = 0;
@@ -330,6 +352,7 @@ bool Server::RecieveStep(const char* buf, const size_t size, Clients::iterator c
   stream >> y_coord >> delimiter >> x_coord;
   if (!IsCoordinateCorrect(y_coord) || !IsCoordinateCorrect(x_coord) || delimiter != ':'
       || !stream.eof()) {
+    client_iterator->SendMessage();
     return false;
   }
 
@@ -380,10 +403,11 @@ bool Server::RecieveStep(const char* buf, const size_t size, Clients::iterator c
     client_iterator->opponent_->PrepareMessage("lost");
   }
 
+  client_iterator->SendMessage();
   return true;
 }
 
 bool Server::IsFree(Clients::iterator client_iterator) const {
-	return client_iterator->opponent_ == clients_.end();
+  return client_iterator->opponent_ == clients_.end();
 }
 

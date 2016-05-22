@@ -85,7 +85,7 @@ public:
       : client_socket_(client_socket), opponent_(opponent), status_(status) {
   }
 
-  void SendMessages();
+  void SendMessage();
 
   void PrepareMessage(const std::string& message);
 
@@ -134,8 +134,10 @@ private:
   // We need mutex_for_starting_game in function Server::ReceiveShips(), because data race is possible
   // in section with changing statuses from WAITING to WAITING_STEP and MAKING_STEP.
   // Only one thread should do this section.
-  std::mutex mutex_for_starting_game;bool gone = false;
-  QueueWithCondVar<QueryAndSocket> queue_of_POST_queries_from_client;
+  std::mutex mutex_for_starting_game;
+  bool gone = false;
+  std::mutex handle_query_mutex;
+  QueueWithCondVar<PostQuery> POST_contents_queue_;
 };
 
 #endif /* TCLIENT_H_ */

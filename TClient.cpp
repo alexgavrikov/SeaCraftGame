@@ -10,7 +10,7 @@
 #include <sstream>
 #include "thread_safe_print.h"
 
-void TClient::SendMessages() {
+void TClient::SendMessage() {
   std::stringstream whole_message;
   whole_message << "HTTP/1.1 200 OK" + kHttpLineEnd + "Content-Length: ";
 
