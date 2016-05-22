@@ -333,6 +333,7 @@ bool Server::RecieveStep(const char* buf, const size_t size, Clients::iterator c
     return false;
   }
 
+
   std::vector<TClient::Coordinate> pieces_of_killed;
   const size_t result_of_shooting = client_iterator->opponent_->GetShooting(x_coord, y_coord,
       pieces_of_killed);
