@@ -103,7 +103,6 @@ void Server::SendHTML(const std::string& get_query, int source_socket) {
       ConnectTwoClients(maybe_free_player_iter, new_player_iter);
     }
   }
-  list_mutex_wrapper.unlock();
 }
 
 void Server::SendIcon(const std::string& get_query, int source_socket) {
@@ -287,7 +286,7 @@ bool Server::IsAboutShips(const std::string& message, Clients::iterator client_i
     return false;
   }
 
-  if (message.substr(kShippingHeaderLen) != kShippingHeader) {
+  if (message.substr(0, kShippingHeaderLen) != kShippingHeader) {
     return false;
   }
 
@@ -336,7 +335,7 @@ bool Server::IsAboutStep(const std::string& message, Clients::iterator client_it
     return false;
   }
 
-  if (message.substr(kStepHeaderLen) != kStepHeader) {
+  if (message.substr(0, kStepHeaderLen) != kStepHeader) {
     return false;
   }
 
@@ -344,7 +343,7 @@ bool Server::IsAboutStep(const std::string& message, Clients::iterator client_it
 }
 
 bool Server::FetchStep(const std::string& message, Clients::iterator client_iterator) {
-  const char* buf = message.c_str() + kShippingHeaderLen;
+  const char* buf = message.c_str();
 
   std::stringstream stream(buf + kStepHeaderLen);
   int y_coord = 0, x_coord = 0;
