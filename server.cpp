@@ -265,7 +265,7 @@ bool Server::IsCoordinateCorrect(const size_t coordinate) {
 void Server::Disconnect(Clients::iterator client_iterator) {
   std::unique_lock<std::mutex> list_mutex_wrapper(list_mutex_);
   client_iterator->gone = true;
-ubsyt if (client_iterator->opponent_ != clients_.end()) {
+  if (client_iterator->opponent_ != clients_.end()) {
     if (client_iterator->opponent_->gone) {
       clients_.erase(client_iterator->opponent_);
       clients_.erase(client_iterator);
